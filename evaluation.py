@@ -15,7 +15,6 @@ def optDecision_binary(prior, Cfn, Cfp, LLRs, L):
     predictedLabels = (LLRs > t).astype(int)
     CM = utility.confusionMatrix(predictedLabels, L, 2)
     return CM
-    # CIAO STO PROVANDO GITHUB
 
 
 def compute_DCF(CM, prior, Cfn, Cfp):

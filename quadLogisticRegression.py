@@ -3,6 +3,7 @@ import utility
 import scipy
 
 
+
 class QLogisticRegression:
 
     def __init__(self, DT, LT, lamb, prior):
@@ -21,6 +22,18 @@ class QLogisticRegression:
             fi_x.append(expanded)
         fi_x = numpy.hstack(fi_x)
         return fi_x
+
+    def computeGradient(self, w, fi_x, s0, s1):
+        den0 = numpy.exp(self.ZT[self.LT == 0] * s0) + 1
+        den1 = numpy.exp(self.ZT[self.LT == 1] * s1) + 1
+        sum0_grad = ((fi_x[:, self.LT == 0] * (-self.ZT[self.LT == 0])) / den0).sum(1)
+        sum1_grad = ((fi_x[:, self.LT == 1] * (-self.ZT[self.LT == 1])) / den1).sum(1)
+        derivative_w = self.lamb * w +(self.prior/self.LT[self.LT==1].size)*sum1_grad + ((1-self.prior)/self.LT[self.LT==0].size)*sum0_grad
+        sum0_grad = (-self.ZT[self.LT == 0] / den0).sum()
+        sum1_grad = (-self.ZT[self.LT == 1] / den1).sum()
+        derivative_b = (self.prior/self.LT[self.LT==1].size)*sum1_grad + ((1-self.prior)/self.LT[self.LT==0].size)*sum0_grad
+        return numpy.hstack((derivative_w, derivative_b))
+
     def logreg_obj(self, v):
         w, c = v[0:-1], v[-1]
         normTerm = 0.5 * self.lamb * (numpy.linalg.norm(w) ** 2)
@@ -31,11 +44,9 @@ class QLogisticRegression:
         sum0 = numpy.logaddexp(0, -self.ZT[self.LT==0] * s0).sum(0)
         sum1 = numpy.logaddexp(0, -self.ZT[self.LT==1] * s1).sum(0)
 
-        sum0_grad = ((fi_x[:, self.LT==0]*(-self.ZT[self.LT==0]))/(numpy.exp(self.ZT[self.LT==0]*s0)+1)).sum(1)
-        sum1_grad = ((fi_x[:, self.LT==1]*(-self.ZT[self.LT==1]))/(numpy.exp(self.ZT[self.LT==1]*s1)+1)).sum(1)
         f = normTerm + (self.prior/self.LT[self.LT==1].size)*sum1 + ((1-self.prior)/self.LT[self.LT==0].size)*sum0
-        grad = self.lamb * w +(self.prior/self.LT[self.LT==1].size)*sum1_grad + ((1-self.prior)/self.LT[self.LT==0].size)*sum0_grad
-        return f, grad
+        #grad = self.computeGradient(w,fi_x, s0, s1)
+        return f#, grad
 
     def train(self):
         dim = self.DT.shape[0]**2+self.DT.shape[0]+1
@@ -43,7 +54,7 @@ class QLogisticRegression:
 
         # L'unica cosa che cambia è che invece di utilizzare x(cioé l'intera DT) utilizzo fi(x) = [[vec(xx.T)], [x]]
         self.fi_x = self.mappingFi(self.DT)
-        xOpt, fOpt, d = scipy.optimize.fmin_l_bfgs_b(self.logreg_obj, x0) #, approx_grad=True
+        xOpt, fOpt, d = scipy.optimize.fmin_l_bfgs_b(self.logreg_obj, x0, approx_grad=True) #, approx_grad=True
         self.xOpt = xOpt # in xOpt[0:-1] c'è w, in xOpt[-1] ho b
 
     def getScores(self, DV): # this can be tresholded with 0
@@ -60,3 +71,5 @@ class QLogisticRegression:
         scores = self.getScores(DV)
         predictions = (scores>0).astype(int)
         return predictions
+
+
