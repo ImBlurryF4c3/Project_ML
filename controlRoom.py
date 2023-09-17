@@ -5,14 +5,15 @@ import utility
 import dimensionalityreduction as dr
 import generative_models as gm
 import evaluation
+import GMM
 import logisticRegression
 import quadLogisticRegression
 import SVM
 
 
 if __name__ == '__main__':
-    D, L = utility.load_dataset('Train.txt')
-    DC = utility.center_data(D)
+    #D, L = utility.load_dataset('Train.txt')
+    #DC = utility.center_data(D)
     """ PROVE DI PLOTTING
     for feature in range(DC.shape[0]):
         plotHist(feature, DC, L)
@@ -278,6 +279,7 @@ if __name__ == '__main__':
             minDCF = evaluation.minimum_DCF(scores, orderedLabels, priors[j], 1, 1)
             print("PRIOR: %.1f, minDCF: %.3f" % (priors[j], minDCF))
         """
+    """
     c_X = numpy.logspace(-5, 5, num=40)
     minDCF = []
     Dfolds, Lfolds = utility.Ksplit(D, L, 5)
@@ -300,3 +302,58 @@ if __name__ == '__main__':
             orderedLabels = numpy.hstack(orderedLabels)
             minDCF.append(evaluation.minimum_DCF(scores, orderedLabels, priors[j], 1, 1))
     utility.plotDCF(c_X, minDCF, 'C')
+    """
+
+    #""" ----GMM-----
+    #D, L = utility.load_dataset('Train.txt') # Pc Roberto
+    D, L = utility.load_dataset('Project_ML\Train.txt') # PC gabri
+    types_gmm = ['full_cov', 'diagonal', 'tied', 'tied_diagonal']
+    data_type = ['raw_data', 'z_score_data']
+    components = [1, 2, 4, 8, 16, 32]
+    minDCF = []
+
+    for title in data_type: # raw data and Z-normalization
+        if title == 'raw_data':
+            DTR = D
+        else:
+            DTR = utility.z_normalization(D) # dati normalizzati
+        print("----- %s -----" % title)
+        for type in types_gmm:
+            for p in priors:
+                for c in components:
+                    print("")
+                    print("----- GMM_%s (piT = %.1f) components = %.1f -----" % (type, p, c))
+                    # K FOLD
+                    Dfolds, Lfolds = utility.Ksplit(DTR, L, 5)
+
+                    scores = []
+                    orderedLabels = []
+                    for idx in range(5):
+                        # Evaluation set
+                        DV = Dfolds[idx]
+                        LV = Lfolds[idx]
+                        DT, LT = utility.createTrainSet(Dfolds, Lfolds, idx)
+
+                        gmm = GMM.GMM(DT, LT, type, c)
+                        gmm.train()
+                        scores.append(gmm.compute_scores(DV))
+
+                        orderedLabels.append(LV)
+                    scores = numpy.hstack(scores)
+                    orderedLabels = numpy.hstack(orderedLabels)
+                    
+                    mdcf = evaluation.minimum_DCF(scores, orderedLabels, p, 1, 1)
+                    minDCF.append(mdcf)
+                    print("PRIOR: %.1f, minDCF: %.3f" % (p, mdcf))
+    utility.plot_GMM_histogram1(components, minDCF, data_type) # stampa tutti e 4 insieme
+    utility.plot_GMM_histogram2(components, minDCF, data_type, types_gmm) # stampa raw data e z_normalization insieme
+
+    #"""
+
+    """ -----SCORES CALIBRATION----
+    calibration_scores(D, L, 'GMM_Tied_4_Components', 'gmm_tied_4_components_raw_data') # filename and title
+    calibration_scores(D, L, 'MVG', 'mvg')
+    calibration_scores(D, L, 'logistic regression', 'logistic_regression')
+    calibration_scores(D, L, 'svm', 'svm')
+
+    """

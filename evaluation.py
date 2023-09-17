@@ -62,6 +62,28 @@ def minimum_DCF(llrs, LTE, prior, Cfn, Cfp):
         DCFlist.append(normalized_DCF(compute_DCF(CM, prior, Cfn, Cfp), prior, Cfn, Cfp))
     return min(DCFlist)
 
+# def actual_DCF(scores, LTE, prior, Cfn, Cfp):
+#     toSortProp = sorted(list(zip(scores, LTE))) # mi appoggio a questa lista di tuple per fare un sorting congruente
+#     sortedLLRs = numpy.array([t[0] for t in toSortProp])
+#     sortedL = numpy.array([t[1] for t in toSortProp])
+#     # We compute the first Confusion Matrix as t = -inf, so evrything is labeled as 1
+#     PL = (sortedLLRs > float(-inf)).astype(int) # PREDICTIONS
+#     CM = utility.confusionMatrix(PL, sortedL, 2) # CONFUSION MATRIX
+#     # lista che conterrà le varie dcf al variare di t
+#     DCFlist = []
+#     DCFlist.append(normalized_DCF(compute_DCF(CM, prior, Cfn, Cfp), prior, Cfn, Cfp))
+#     for i in range(sortedLLRs.size):
+#         # Ogni iterazione muta la label di un solo sample: da True passa a False
+#         # Se la Label associatagli era effettivamente False, la predizione precedente (= True) era incorretta (aka -1 nei False Positive)
+#         if (sortedL[i] == False):
+#             CM[1, 0] -= 1
+#             CM[0, 0] += 1
+#         else:  # Significa che la label era True e quindi precedentemente era stata associata correttamente (aka -1 nei True Positive)
+#             CM[1, 1] -= 1
+#             CM[0, 1] += 1
+#         DCFlist.append(normalized_DCF(compute_DCF(CM, prior, Cfn, Cfp), prior, Cfn, Cfp))
+#     return min(DCFlist)
+
 
 """ 
 def minimum_DCF_NotOpt(llrs, LTE, prior, Cfn, Cfp):
