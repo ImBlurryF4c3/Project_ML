@@ -149,5 +149,95 @@ def createTrainSet(Dfolds, Lfolds, idx):
     return numpy.hstack(DT), numpy.hstack(LT)
 
 
+def plot_GMM_histogram_1(components, y, data, defPath = ''):
+    # stampa tutti e 4 i modelli insieme: full-cov, diag, tied, tied-diag
+    for i in range(2): # raw_data e z_normalization
+        fig = plt.figure()
+        fc, d, t, td = [], [], [], []
+        for j in range(len(components)):
+            fc.append(y[j + (i * 12 * len(components))])
+            d.append(y[j + (3 * len(components)) + (i * 12 * len(components))])
+            t.append(y[j + (6 * len(components)) + (i * 12 * len(components))])
+            td.append(y[j + (9 * len(components)) + (i * 12 * len(components))])
+        max_y_value = max(max(max(fc), max(d)), max(max(t), max(td)))
+        bar_width = 0.1
+        border_width = 1.0  # Set the border width
+        x = numpy.arange(len(components))
+
+        plt.bar(x - 1.5 * bar_width, fc, bar_width, label='minDCF(π~ = 0.5) - Full-Cov', color='yellow', edgecolor='black', linewidth=border_width)
+        plt.bar(x - 0.5 * bar_width, d, bar_width, label='minDCF(π~ = 0.5) - Diagonal', color='orange', edgecolor='black', linewidth=border_width)
+        plt.bar(x + 0.5 * bar_width, t, bar_width, label='minDCF(π~ = 0.5) - Tied', color='red', edgecolor='black', linewidth=border_width)
+        plt.bar(x + 1.5 * bar_width, td, bar_width, label='minDCF(π~ = 0.5) - Tied-Diagonal', color='darkred', edgecolor='black', linewidth=border_width)
+        
+        plt.ylim(0, max_y_value + 0.1)
+        plt.xlabel('GMM Components')
+        plt.ylabel('minDCF')
+        plt.xticks(x, components)
+        plt.title("%s with prior = 0.5" % data[i])
+
+        plt.legend()
 
 
+        plt.savefig(defPath + 'Project_ML/images/gmm/%s.jpg' % data[i], dpi=300, bbox_inches='tight')
+        plt.close(fig)
+
+def plot_GMM_histogram_2(components, y, data, types, defPath = ''): # x sono i components, y le mindcf
+    # stampa insieme per ogni componente il valore dei raw data e
+    bar_width = 0.1
+    x = numpy.arange(len(components))
+    border_width = 1.0  # Set the border width
+    for i in range(4): # per ogni modello full-cov, diag, tied, tied-cov
+        fig = plt.figure()
+        plt.title('GMM %s with prior = 0.5' % types[i])
+        raw_data = []
+        z_normalization_data = []
+        for j in range(len(components)):
+            raw_data.append(y[j + (3*i*len(components))])
+            z_normalization_data.append(y[j +  (12*len(components)) + (3*i*len(components))])
+        max_y_value = max(max(raw_data), max(z_normalization_data))
+        plt.bar(x - 0.5 * bar_width, raw_data, bar_width, label='raw_data', color='orange', edgecolor='black', linewidth=border_width)
+        plt.bar(x + 0.5 * bar_width, z_normalization_data, bar_width, label='z_score', color='red', edgecolor='black', linewidth=border_width)
+        
+        # Set labels and title
+        plt.xlabel('GMM Components')
+        plt.ylabel('minDCF')
+        plt.xticks(x, components)
+        
+        plt.legend()
+        plt.ylim(0, max_y_value + 0.1)
+
+        plt.savefig(defPath + 'Project_ML/images/gmm/%s.jpg' % types[i], dpi=300, bbox_inches='tight')
+        plt.close(fig)
+
+def load_dataset_shuffled(fname):
+    samples_list = []
+    labels_list = []
+    with open(fname) as f:
+        for line in f:
+            # Ogni riga contiene le 12 features e vome ultimo valore la label
+            # 0 per male, 1 per female. Prima creo una lista di vettori colonna (12,1)
+            # infine concateno in verticale (vstack)
+            features = line.split(',')[:-1]
+            samples_list.append(vcol(numpy.array([float(xi) for xi in features])))
+            labels_list.append(int(line.split(',')[-1].strip()))
+    D = numpy.hstack(samples_list)
+    L = numpy.array(labels_list)
+    return shuffle_dataset(D, L)
+
+def shuffle_dataset(D, L):
+    numpy.random.seed(0)
+    idx = numpy.random.permutation(D.shape[1])
+    return D[:, idx], L[idx]
+
+def bayes_error_plot(p, minDCF, actDCF, filename, title, defPath = ''):
+    fig = plt.figure()
+    plt.title(title)
+    plt.plot(p, numpy.array(actDCF), label = 'actDCF', color='salmon')
+    plt.plot(p, numpy.array(minDCF), label = 'minDCF', color='dodgerblue', linestyle='--')
+    plt.ylim([0, 1])
+    plt.xlim([-4, 4])
+    plt.xlabel('prior')
+    plt.ylabel('DCF')
+    plt.legend(loc='best')
+    plt.savefig(defPath + 'Project_ML/images/calibration/%s_bayes_error_plot.jpg' % filename, dpi=300, bbox_inches='tight')
+    plt.close(fig)

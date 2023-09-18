@@ -75,3 +75,41 @@ def minimum_DCF_NotOpt(llrs, LTE, prior, Cfn, Cfp):
         DCFlist.append(normalized_DCF(compute_DCF(CM, prior, Cfn, Cfp), prior, Cfn, Cfp))
     return min(DCFlist)
 """
+
+
+def actual_DCF(scores, labels, pi, Cfn, Cfp):
+    threshold = - numpy.log((pi * Cfn)/((1-pi)*Cfp))
+    predictions = (scores > threshold).astype(int)
+    CM = utility.confusionMatrix(predictions, labels, 2)
+    return normalized_DCF(compute_DCF(CM, pi, Cfn, Cfp), pi, Cfn, Cfp)
+
+
+# def assign_labels(scores, pi, Cfn, Cfp, th=None):
+#     if th is None:
+#         th = - numpy.log(pi * Cfn) + numpy.log((1 - pi) * Cfp)
+#     P = scores > th
+#     return numpy.int32(P)
+
+
+# def conf_matrix(Pred, labels):
+#     C = numpy.zeros((2, 2))
+#     C[0, 0] = ((Pred == 0) * (labels == 0)).sum()
+#     C[0, 1] = ((Pred == 0) * (labels == 1)).sum()
+#     C[1, 0] = ((Pred == 1) * (labels == 0)).sum()
+#     C[1, 1] = ((Pred == 1) * (labels == 1)).sum()
+#     return C
+
+# def actual_DCF(scores, labels, pi, Cfn, Cfp, th=None):
+#     Pred = assign_labels(scores, pi, Cfn, Cfp, th=th)
+#     CM = conf_matrix(Pred, labels)
+#     return DCF(CM, pi, Cfn, Cfp)
+
+# def DCFu(Conf, pi, Cfn, Cfp):
+#     FNR = Conf[0, 1]/(Conf[0, 1] + Conf[1, 1])
+#     FPR = Conf[1, 0]/(Conf[0, 0] + Conf[1, 0])
+#     return pi * Cfn * FNR + (1 - pi) * Cfp * FPR
+
+
+# def DCF(Conf, pi, Cfn, Cfp):
+#     _DCFu = DCFu(Conf, pi, Cfn, Cfp)
+#     return _DCFu / min(pi * Cfn, (1 - pi) * Cfp)
