@@ -9,10 +9,12 @@ import GMM
 import logisticRegression
 import quadLogisticRegression
 import SVM
-
+import calibration
 
 if __name__ == '__main__':
-    #D, L = utility.load_dataset('Train.txt')
+    #D, L = utility.load_dataset('Train.txt') # PC roberto
+    #D, L = utility.load_dataset_2('Project_ML\Train.txt') # PC gabri #with shuffle
+    #D, L = utility.load_dataset('Project_ML\Train.txt') # PC gabri #with shuffle
     #DC = utility.center_data(D)
     """ PROVE DI PLOTTING
     for feature in range(DC.shape[0]):
@@ -37,71 +39,71 @@ if __name__ == '__main__':
     priors = [0.5, 0.1, 0.9]
     PCAdim = [9, 10, 11]
     types = ['MVG', 'Naive Bayes', 'Tied', 'Tied Naive Bayes']
-    """
+    #"""
     # ----MODELLI GAUSSIANI---
-    for m in PCAdim:
-        print("\n")
-        print("------Applying PCA with m = %d------" %(m))
-        DP = dr.PCA(DC, m)
+    # for m in PCAdim:
+    #     print("\n")
+    #     print("------Applying PCA with m = %d------" %(m))
+    #     DP = dr.PCA(DC, m)
 
-        for type in types:
-            # Uso una tecnica di crossvalidation con k=5
-            Dfolds, Lfolds = utility.Ksplit(DP, L, 5)
-            # IDEA per pulire il codice
-            # creare delle classi per modello e fare una funzione kfold a cui passo
-            # Dfolds, Lfolds, modello
-            # che traina il modello, fa l'evaluation e mi torna gli score
-            print("")
-            print("%s" %(type))
-            scores = []
-            orderedLabels = []
-            for idx in range(5):
-                # Evaluation set
-                DV = Dfolds[idx]
-                LV = Lfolds[idx]
-                DT, LT = utility.createTrainSet(Dfolds, Lfolds, idx)
-                # Fase di training (dipende dal modello)
-                muList, covMlist = gm.mvGaussian_ML_estimates(DT, LT, type)
-                # Evaluation (dipende dal modello)
-                scores.append(gm.getloglikelihoodRatios(DV, muList, covMlist))
-                orderedLabels.append(LV)
-            scores = numpy.hstack(scores)
-            orderedLabels = numpy.hstack(orderedLabels)
-            # finirebbe qui la Kfold che mi tornerebbe questi due numpy
+    #     for type in types:
+    #         # Uso una tecnica di crossvalidation con k=5
+    #         Dfolds, Lfolds = utility.Ksplit(DP, L, 5)
+    #         # IDEA per pulire il codice
+    #         # creare delle classi per modello e fare una funzione kfold a cui passo
+    #         # Dfolds, Lfolds, modello
+    #         # che traina il modello, fa l'evaluation e mi torna gli score
+    #         print("")
+    #         print("%s" %(type))
+    #         scores = []
+    #         orderedLabels = []
+    #         for idx in range(5):
+    #             # Evaluation set
+    #             DV = Dfolds[idx]
+    #             LV = Lfolds[idx]
+    #             DT, LT = utility.createTrainSet(Dfolds, Lfolds, idx)
+    #             # Fase di training (dipende dal modello)
+    #             muList, covMlist = gm.mvGaussian_ML_estimates(DT, LT, type)
+    #             # Evaluation (dipende dal modello)
+    #             scores.append(gm.getloglikelihoodRatios(DV, muList, covMlist))
+    #             orderedLabels.append(LV)
+    #         scores = numpy.hstack(scores)
+    #         orderedLabels = numpy.hstack(orderedLabels)
+    #         # finirebbe qui la Kfold che mi tornerebbe questi due numpy
 
-            for i in range(len(priors)):
-                minDCF = evaluation.minimum_DCF(scores, orderedLabels, priors[i], 1, 1)
-                print("PRIOR: %.1f, minDCF: %.3f" %(priors[i], minDCF))
-    print("-----NO PCA------")
-    for type in types:
-        # Uso una tecnica di crossvalidation con k=5
-        Dfolds, Lfolds = utility.Ksplit(DC, L, 5)
-        # IDEA per pulire il codice
-        # creare delle classi per modello e fare una funzione kfold a cui passo
-        # Dfolds, Lfolds, modello
-        # che traina il modello, fa l'evaluation e mi torna gli score
-        print("")
-        print("%s" % (type))
-        scores = []
-        orderedLabels = []
-        for idx in range(5):
-            # Evaluation set
-            DV = Dfolds[idx]
-            LV = Lfolds[idx]
-            DT, LT = utility.createTrainSet(Dfolds, Lfolds, idx)
-            # Fase di training (dipende dal modello)
-            muList, covMlist = gm.mvGaussian_ML_estimates(DT, LT, type)
-            # Evaluation (dipende dal modello)
-            scores.append(gm.getloglikelihoodRatios(DV, muList, covMlist))
-            orderedLabels.append(LV)
-        scores = numpy.hstack(scores)
-        orderedLabels = numpy.hstack(orderedLabels)
-        # finirebbe qui la Kfold che mi tornerebbe questi due numpy
+    #         for i in range(len(priors)):
+    #             minDCF = evaluation.minimum_DCF(scores, orderedLabels, priors[i], 1, 1)
+    #             print("PRIOR: %.1f, minDCF: %.3f" %(priors[i], minDCF))
+    # print("-----NO PCA------")
+    # for type in types:
+    #     # Uso una tecnica di crossvalidation con k=5
+    #     Dfolds, Lfolds = utility.Ksplit(DC, L, 5)
+    #     # IDEA per pulire il codice
+    #     # creare delle classi per modello e fare una funzione kfold a cui passo
+    #     # Dfolds, Lfolds, modello
+    #     # che traina il modello, fa l'evaluation e mi torna gli score
+    #     print("")
+    #     print("%s" % (type))
+    #     scores = []
+    #     orderedLabels = []
+    #     for idx in range(5):
+    #         # Evaluation set
+    #         DV = Dfolds[idx]
+    #         LV = Lfolds[idx]
+    #         DT, LT = utility.createTrainSet(Dfolds, Lfolds, idx)
+    #         # Fase di training (dipende dal modello)
+    #         muList, covMlist = gm.mvGaussian_ML_estimates(DT, LT, type)
+    #         # Evaluation (dipende dal modello)
+    #         scores.append(gm.getloglikelihoodRatios(DV, muList, covMlist))
+    #         orderedLabels.append(LV)
+    #     scores = numpy.hstack(scores)
+    #     orderedLabels = numpy.hstack(orderedLabels)
+    #     # finirebbe qui la Kfold che mi tornerebbe questi due numpy
 
-        for i in range(len(priors)):
-            minDCF = evaluation.minimum_DCF(scores, orderedLabels, priors[i], 1, 1)
-            print("PRIOR: %.1f, minDCF: %.3f" % (priors[i], minDCF))
-    """
+    #     for i in range(len(priors)):
+    #         minDCF = evaluation.minimum_DCF(scores, orderedLabels, priors[i], 1, 1)
+    #         print("PRIOR: %.1f, minDCF: %.3f" % (priors[i], minDCF))
+    #"""
 
     """---LOGISTIC REGRESSION---
     for i in range(len(priors)):
@@ -306,54 +308,70 @@ if __name__ == '__main__':
 
     #""" ----GMM-----
     #D, L = utility.load_dataset('Train.txt') # Pc Roberto
-    D, L = utility.load_dataset('Project_ML\Train.txt') # PC gabri
-    types_gmm = ['full_cov', 'diagonal', 'tied', 'tied_diagonal']
-    data_type = ['raw_data', 'z_score_data']
-    components = [1, 2, 4, 8, 16, 32]
-    minDCF = []
+    # D, L = utility.load_dataset('Project_ML\Train.txt')
+    # #D, L = utility.load_dataset_shuffled('Project_ML\Train.txt') # PC gabri #with shuffle
+    # types_gmm = ['full_cov', 'diagonal', 'tied', 'tied_diagonal']
+    # data_type = ['raw_data', 'z_score_data']
+    # components = [1, 2, 4, 8, 16, 32]
+    # minDCF = []
+    # K = 5
+    # for title in data_type: # raw data and Z-normalization
+    #     if title == 'raw_data':
+    #         DTR = D
+    #     else:
+    #         DTR = utility.z_normalization(D) # dati normalizzati
+    #     print("----- %s -----" % title)
+    #     for t in types_gmm:
+    #         for p in priors:
+    #             for c in components:
+    #                 print("")
+    #                 print("----- GMM_%s (piT = %.1f) components = %.1f -----" % (t, p, c))
+    #                 # K FOLD
+    #                 Dfolds, Lfolds = utility.Ksplit(DTR, L, 5)
+    #                 #Dfolds, Lfolds = numpy.array_split(D, K, axis=1), numpy.array_split(L, K)
 
-    for title in data_type: # raw data and Z-normalization
-        if title == 'raw_data':
-            DTR = D
-        else:
-            DTR = utility.z_normalization(D) # dati normalizzati
-        print("----- %s -----" % title)
-        for type in types_gmm:
-            for p in priors:
-                for c in components:
-                    print("")
-                    print("----- GMM_%s (piT = %.1f) components = %.1f -----" % (type, p, c))
-                    # K FOLD
-                    Dfolds, Lfolds = utility.Ksplit(DTR, L, 5)
+    #                 scores = []
+    #                 orderedLabels = []
+    #                 for idx in range(K):
+    #                     # Evaluation set
+    #                     DV = Dfolds[idx]
+    #                     LV = Lfolds[idx]
+    #                     DT, LT = utility.createTrainSet(Dfolds, Lfolds, idx)
+    #                     # DV, LV = Dfolds[idx], Lfolds[idx]
+    #                     # DT, LT = numpy.hstack(Dfolds[:idx] + Dfolds[idx+1:]), numpy.hstack(Lfolds[:idx] + Lfolds[idx+1:])
+                        
+    #                     gmm = GMM.GMM(DT, LT, t, c)
+    #                     gmm.train()
+    #                     scores.append(gmm.compute_scores(DV))
 
-                    scores = []
-                    orderedLabels = []
-                    for idx in range(5):
-                        # Evaluation set
-                        DV = Dfolds[idx]
-                        LV = Lfolds[idx]
-                        DT, LT = utility.createTrainSet(Dfolds, Lfolds, idx)
-
-                        gmm = GMM.GMM(DT, LT, type, c)
-                        gmm.train()
-                        scores.append(gmm.compute_scores(DV))
-
-                        orderedLabels.append(LV)
-                    scores = numpy.hstack(scores)
-                    orderedLabels = numpy.hstack(orderedLabels)
+    #                     orderedLabels.append(LV)
+    #                 scores = numpy.hstack(scores)
+    #                 orderedLabels = numpy.hstack(orderedLabels)
                     
-                    mdcf = evaluation.minimum_DCF(scores, orderedLabels, p, 1, 1)
-                    minDCF.append(mdcf)
-                    print("PRIOR: %.1f, minDCF: %.3f" % (p, mdcf))
-    utility.plot_GMM_histogram1(components, minDCF, data_type) # stampa tutti e 4 insieme
-    utility.plot_GMM_histogram2(components, minDCF, data_type, types_gmm) # stampa raw data e z_normalization insieme
+    #                 mdcf = evaluation.minimum_DCF(scores, orderedLabels, p, 1, 1)
+    #                 minDCF.append(mdcf)
+    #                 print("PRIOR: %.1f, minDCF: %.3f" % (p, mdcf))
+    # minDCF = [0.1130952380952381, 0.07678571428571429, 0.07063492063492063, 0.09285714285714286, 0.1478174603174603, 0.2775793650793651, 0.2970238095238095, 0.24464285714285716, 0.2011904761904762, 0.2785714285714286, 0.4922619047619048, 0.7904761904761904, 0.3501984126984128, 0.20892857142857144, 0.2037698412698413, 0.23690476190476195, 0.3119047619047619, 0.47242063492063496, 0.46329365079365076, 0.20476190476190476, 0.18333333333333335, 0.1880952380952381, 0.20595238095238094, 0.21865079365079365, 0.7708333333333334, 0.5011904761904762, 0.46130952380952384, 0.4910714285714286, 0.5113095238095238, 0.4934523809523809, 0.7769841269841271, 0.5126984126984128, 0.47420634920634924, 0.48789682539682544, 0.45694444444444443, 0.5093253968253969, 0.1130952380952381, 0.1130952380952381, 0.06984126984126984, 0.06111111111111111, 0.07837301587301587, 0.0869047619047619, 0.2970238095238095, 0.2970238095238095, 0.22142857142857145, 0.21607142857142855, 0.2702380952380952, 0.25, 0.3501984126984128, 0.3501984126984128, 0.20853174603174607, 0.19980158730158734, 0.21527777777777782, 0.25019841269841275, 0.46329365079365076, 0.2152777777777778, 0.18313492063492065, 0.19702380952380952, 0.18432539682539684, 0.19027777777777777, 0.7708333333333334, 0.494047619047619, 0.4517857142857143, 0.4654761904761905, 0.4964285714285714, 0.48392857142857143, 0.7769841269841271, 0.5420634920634921, 0.47678571428571426, 0.48333333333333334, 0.4706349206349207, 0.44642857142857145, 0.1130952380952381, 0.07678571428571429, 0.07123015873015873, 0.09047619047619047, 0.12400793650793651, 0.16468253968253968, 0.2970238095238095, 0.24464285714285716, 0.2005952380952381, 0.26428571428571423, 0.39999999999999997, 0.5053571428571428, 0.3501984126984128, 0.20892857142857144, 0.2037698412698413, 0.24682539682539686, 0.26369047619047625, 0.35833333333333334, 0.46329365079365076, 0.20476190476190476, 0.18333333333333335, 0.19285714285714287, 0.19682539682539685, 0.21646825396825398, 0.7708333333333334, 0.5011904761904762, 0.461904761904762, 0.48095238095238096, 0.5011904761904762, 0.5369047619047619, 0.7769841269841271, 0.5126984126984128, 0.47420634920634924, 0.45059523809523816, 0.47440476190476194, 0.5188492063492064, 0.1130952380952381, 0.1130952380952381, 0.06765873015873015, 0.06706349206349206, 0.07757936507936508, 0.09166666666666667, 0.2970238095238095, 0.2970238095238095, 0.23690476190476192, 0.22916666666666669, 0.23869047619047618, 0.2732142857142857, 0.3501984126984128, 0.3501984126984128, 0.22242063492063496, 0.20793650793650795, 0.22063492063492066, 0.2257936507936508, 0.46329365079365076, 0.2152777777777778, 0.18432539682539684, 0.19186507936507935, 0.18174603174603174, 0.19246031746031744, 0.7708333333333334, 0.494047619047619, 0.46011904761904765, 0.44821428571428573, 0.5095238095238095, 0.4875, 0.7769841269841271, 0.5420634920634921, 0.48333333333333334, 0.4640873015873016, 0.4728174603174603, 0.43293650793650795]
+    # print("Plotting Histogram")
+    # utility.plot_GMM_histogram_1(components, minDCF, data_type) # stampa tutti e 4 insieme
+    # utility.plot_GMM_histogram_2(components, minDCF, data_type, types_gmm) # stampa raw data e z_normalization insieme
+    # print("Plotting histogram DONE!")
+    #"""
+
+    #""" -----SCORES CALIBRATION----
+    #D, L = utility.load_dataset_shuffled('Train.txt') # PC roberto
+    D, L = utility.load_dataset_shuffled('Project_ML\Train.txt') # PC gabri
+    #raw_data
+    #calibration.scores_calibration(D, L, 'GMM_Tied_4_Components', 'gmm_tied_4_components_raw_data') # filename and title
+
+    calibration.scores_calibration(D, L, 'MVG_tied', 'mvg_tied')
+    #calibration.scores_calibration(D, L, 'logistic regression', 'logistic_regression')
+    #calibration.scores_calibration(D, L, 'svm', 'svm')
 
     #"""
 
-    """ -----SCORES CALIBRATION----
-    calibration_scores(D, L, 'GMM_Tied_4_Components', 'gmm_tied_4_components_raw_data') # filename and title
-    calibration_scores(D, L, 'MVG', 'mvg')
-    calibration_scores(D, L, 'logistic regression', 'logistic_regression')
-    calibration_scores(D, L, 'svm', 'svm')
-
-    """
+    #""" -----VALIDATION TEST-----
+    
+    
+    
+    #"""

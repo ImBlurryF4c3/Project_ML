@@ -31,8 +31,8 @@ class GMM:
 
     def _gmm_LBG(self, D, components, type):
         alpha = 1e-1
-        initial_mu = utility.empirical_mean(D)
-        initial_sigma = utility.empirical_covariance(D)
+        initial_mu = utility.vcol(D.mean(1))
+        initial_sigma = utility.covMatrix(D)
         gmm = [(1, initial_mu, initial_sigma)]
 
         while len(gmm) <= components:

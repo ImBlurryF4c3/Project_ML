@@ -151,22 +151,22 @@ def createTrainSet(Dfolds, Lfolds, idx):
 
 
 # #### DA AGGIUNGERE ******************************+
-# def z_normalization(D):
-#     mu = vcol(D.mean(1))                # z-normalization
-#     std = vcol(numpy.std(D, axis=1))
-#     D = (D - mu) / std
-#     return D
+def z_normalization(D):
+    mu = vcol(D.mean(1))                # z-normalization
+    std = vcol(numpy.std(D, axis=1))
+    D = (D - mu) / std
+    return D
 
-def plot_GMM_histogram1(components, y, data, defPath = ''):
+def plot_GMM_histogram_1(components, y, data, defPath = ''):
     # stampa tutti e 4 i modelli insieme: full-cov, diag, tied, tied-diag
     for i in range(2): # raw_data e z_normalization
         fig = plt.figure()
         fc, d, t, td = [], [], [], []
         for j in range(len(components)):
-            fc.append(y[j + (i * 3 * 4 * len(components))])
-            d.append(y[j + (3 * len(components)) + (i * 3 * 4 * len(components))])
-            t.append(y[j + (6 * len(components)) + (i * 3 * 4 * len(components))])
-            td.append(y[j + (9 * len(components)) + (i * 3 * 4 * len(components))])
+            fc.append(y[j + (i * 12 * len(components))])
+            d.append(y[j + (3 * len(components)) + (i * 12 * len(components))])
+            t.append(y[j + (6 * len(components)) + (i * 12 * len(components))])
+            td.append(y[j + (9 * len(components)) + (i * 12 * len(components))])
         max_y_value = max(max(max(fc), max(d)), max(max(t), max(td)))
         bar_width = 0.1
         border_width = 1.0  # Set the border width
@@ -176,20 +176,20 @@ def plot_GMM_histogram1(components, y, data, defPath = ''):
         plt.bar(x - 0.5 * bar_width, d, bar_width, label='minDCF(π~ = 0.5) - Diagonal', color='orange', edgecolor='black', linewidth=border_width)
         plt.bar(x + 0.5 * bar_width, t, bar_width, label='minDCF(π~ = 0.5) - Tied', color='red', edgecolor='black', linewidth=border_width)
         plt.bar(x + 1.5 * bar_width, td, bar_width, label='minDCF(π~ = 0.5) - Tied-Diagonal', color='darkred', edgecolor='black', linewidth=border_width)
-
+        
+        plt.ylim(0, max_y_value + 0.1)
         plt.xlabel('GMM Components')
-        plt.ylim(0, max_y_value)
         plt.ylabel('minDCF')
         plt.xticks(x, components)
         plt.title("%s with prior = 0.5" % data[i])
 
         plt.legend()
-        plt.ylim(0, max_y_value + 0.1)
+
 
         plt.savefig(defPath + 'Project_ML/images/gmm/%s.jpg' % data[i], dpi=300, bbox_inches='tight')
         plt.close(fig)
 
-def plot_GMM_histogram2(components, y, data, types, defPath = ''): # x sono i components, y le mindcf
+def plot_GMM_histogram_2(components, y, data, types, defPath = ''): # x sono i components, y le mindcf
     # stampa insieme per ogni componente il valore dei raw data e
     bar_width = 0.1
     x = numpy.arange(len(components))
@@ -217,15 +217,7 @@ def plot_GMM_histogram2(components, y, data, types, defPath = ''): # x sono i co
         plt.savefig(defPath + 'Project_ML/images/gmm/%s.jpg' % types[i], dpi=300, bbox_inches='tight')
         plt.close(fig)
 
-def empirical_mean(X):
-    return vcol(X.mean(1))
-
-def empirical_covariance(X):
-    mu = empirical_mean(X)
-    C = numpy.dot((X - mu), (X - mu).T) / X.shape[1]
-    return C
-
-def load_dataset_2(fname):
+def load_dataset_shuffled(fname):
     samples_list = []
     labels_list = []
     with open(fname) as f:
@@ -244,3 +236,16 @@ def shuffle_dataset(D, L):
     numpy.random.seed(0)
     idx = numpy.random.permutation(D.shape[1])
     return D[:, idx], L[idx]
+
+def bayes_error_plot(p, minDCF, actDCF, filename, title, defPath = ''):
+    fig = plt.figure()
+    plt.title(title)
+    plt.plot(p, numpy.array(actDCF), label = 'actDCF', color='salmon')
+    plt.plot(p, numpy.array(minDCF), label = 'minDCF', color='dodgerblue', linestyle='--')
+    plt.ylim([0, 1])
+    plt.xlim([-4, 4])
+    plt.xlabel('prior')
+    plt.ylabel('DCF')
+    plt.legend(loc='best')
+    plt.savefig(defPath + 'Project_ML/images/calibration/%s_bayes_error_plot.jpg' % filename, dpi=300, bbox_inches='tight')
+    plt.close(fig)
