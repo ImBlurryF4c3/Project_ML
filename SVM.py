@@ -73,3 +73,36 @@ class PolynomialSVM():
         D = ((numpy.dot(self.DT.T, DV) + self.c)**self.d) + (self.K ** 2)
         return (utility.vcol(self.alpha) * utility.vcol(ZT) * D).sum(0)
 
+
+class RBF_SVM():
+    def __init__(self, DT, LT, prior, C, K, gamma):
+        # KERNEL FUNCTION: e^(-gamma*||x1-x2||^2)
+        self.DT = DT
+        self.LT = LT
+        self.prior = prior
+        self.C = C
+        self.K = K
+        self.gamma = gamma # a new hyperparameter
+
+    def train(self):
+        ZT = self.LT * 2 - 1
+        k_DT = numpy.zeros((self.DT.shape[1],self.DT.shape[1]))
+        for i in range(self.DT.shape[1]):
+            for j in range(self.DT.shape[1]):
+                k_DT[i,j] = numpy.exp(-self.gamma * numpy.linalg.norm(self.DT[:,i]-self.DT[:,j])**2)+self.K**2
+        zizj = numpy.dot(utility.vcol(ZT), utility.vrow(ZT))
+        self.Hij = zizj*k_DT
+        C1 = self.C * self.prior / (self.DT[:, self.LT == 1].shape[1] / self.DT.shape[1])
+        C0 = self.C * (1 - self.prior) / (self.DT[:, self.LT == 0].shape[1] / self.DT.shape[1])
+        b = [(0, C1) if self.LT[i] == 1 else (0, C0) for i in range(self.DT.shape[1])]
+        obj = obj_svm_wrap(self.Hij)
+        alpha, _, _ = scipy.optimize.fmin_l_bfgs_b(obj, numpy.zeros(self.DT.shape[1]), bounds=b, factr=1.0)
+        self.alpha = alpha
+
+    def getScores(self, DV):
+        ZT = self.LT * 2 - 1
+        k_D = numpy.zeros((self.DT.shape[1], DV.shape[1]))
+        for i in range(self.DT.shape[1]):
+            for j in range(DV.shape[1]):
+                k_D[i, j] = numpy.exp(-self.gamma * numpy.linalg.norm(self.DT[:, i] - DV[:, j]) ** 2) + self.K ** 2
+        return (utility.vcol(self.alpha) * utility.vcol(ZT) * k_D).sum(0)

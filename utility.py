@@ -18,6 +18,11 @@ def center_data(D):
     centeredData = D - means
     return centeredData
 
+def Znormalization(D):
+    means = vcol(D.mean(axis=1))
+    stds = vcol(D.std(axis=1))
+    return (D-means)/stds
+
 def covMatrix(D):
     #Compute the covariance matrix of the input matrix
     DC = center_data(D)
@@ -121,7 +126,7 @@ def split_db_singleFold(D, L, seed=0):
     return (DTR, LTR), (DTE, LTE)
 
 # Per CROSS VALIDATION
-def Ksplit(D, L, K, seed=0):
+def Ksplit(D, L, K, seed=27):
     # Tale funziona splitta D ed L in K folds e li torna sottoforma di liste
     nTrain = int(D.shape[1] / K)  # Grandezza di ogni fold
     numpy.random.seed(seed)

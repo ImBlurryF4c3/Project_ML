@@ -3,7 +3,7 @@ import numpy
 
 import utility
 import dimensionalityreduction as dr
-import generative_models as gm
+import gaussianClassifiers as gc
 import evaluation
 import logisticRegression
 import quadLogisticRegression
@@ -13,7 +13,10 @@ import SVM
 if __name__ == '__main__':
     D, L = utility.load_dataset('Train.txt')
     DC = utility.center_data(D)
-    """ PROVE DI PLOTTING
+    priors = [0.5, 0.1, 0.9]
+    PCAdim = [9, 10, 11]
+    DZ = utility.Znormalization(D)
+    """ ---PROVE DI PLOTTING---
     for feature in range(DC.shape[0]):
         plotHist(feature, DC, L)
     dr.plotPCAvariance(DC)
@@ -33,16 +36,12 @@ if __name__ == '__main__':
     #DL2 = dr.LDA2(D, L, 1)
     #plotHist(0, DL2, L)
     """
-    priors = [0.5, 0.1, 0.9]
-    PCAdim = [9, 10, 11]
+    """ ---MODELLI GAUSSIANI--- FATTOOOOOOOO
     types = ['MVG', 'Naive Bayes', 'Tied', 'Tied Naive Bayes']
-    """
-    # ----MODELLI GAUSSIANI---
     for m in PCAdim:
         print("\n")
         print("------Applying PCA with m = %d------" %(m))
-        DP = dr.PCA(DC, m)
-
+        DP = dr.PCA(D, m)
         for type in types:
             # Uso una tecnica di crossvalidation con k=5
             Dfolds, Lfolds = utility.Ksplit(DP, L, 5)
@@ -60,21 +59,22 @@ if __name__ == '__main__':
                 LV = Lfolds[idx]
                 DT, LT = utility.createTrainSet(Dfolds, Lfolds, idx)
                 # Fase di training (dipende dal modello)
-                muList, covMlist = gm.mvGaussian_ML_estimates(DT, LT, type)
+                gaussClass = gc.GaussianClassifier(DT, LT, type)
+                gaussClass.train()
                 # Evaluation (dipende dal modello)
-                scores.append(gm.getloglikelihoodRatios(DV, muList, covMlist))
+                scores.append(gaussClass.getloglikelihoodRatios(DV))
                 orderedLabels.append(LV)
             scores = numpy.hstack(scores)
             orderedLabels = numpy.hstack(orderedLabels)
             # finirebbe qui la Kfold che mi tornerebbe questi due numpy
-
-            for i in range(len(priors)):
-                minDCF = evaluation.minimum_DCF(scores, orderedLabels, priors[i], 1, 1)
-                print("PRIOR: %.1f, minDCF: %.3f" %(priors[i], minDCF))
+            for p in priors:
+                minDCF = evaluation.minimum_DCF(scores, orderedLabels, p, 1, 1)
+                print("PRIOR: %.1f, minDCF: %.3f" %(p, minDCF))
+    print("")
     print("-----NO PCA------")
     for type in types:
         # Uso una tecnica di crossvalidation con k=5
-        Dfolds, Lfolds = utility.Ksplit(DC, L, 5)
+        Dfolds, Lfolds = utility.Ksplit(D, L, 5)
         # IDEA per pulire il codice
         # creare delle classi per modello e fare una funzione kfold a cui passo
         # Dfolds, Lfolds, modello
@@ -89,24 +89,24 @@ if __name__ == '__main__':
             LV = Lfolds[idx]
             DT, LT = utility.createTrainSet(Dfolds, Lfolds, idx)
             # Fase di training (dipende dal modello)
-            muList, covMlist = gm.mvGaussian_ML_estimates(DT, LT, type)
+            gaussClass = gc.GaussianClassifier(DT, LT, type)
+            gaussClass.train()
             # Evaluation (dipende dal modello)
-            scores.append(gm.getloglikelihoodRatios(DV, muList, covMlist))
+            scores.append(gaussClass.getloglikelihoodRatios(DV))
             orderedLabels.append(LV)
         scores = numpy.hstack(scores)
         orderedLabels = numpy.hstack(orderedLabels)
         # finirebbe qui la Kfold che mi tornerebbe questi due numpy
-
-        for i in range(len(priors)):
-            minDCF = evaluation.minimum_DCF(scores, orderedLabels, priors[i], 1, 1)
-            print("PRIOR: %.1f, minDCF: %.3f" % (priors[i], minDCF))
+        for p in priors:
+            minDCF = evaluation.minimum_DCF(scores, orderedLabels, p, 1, 1)
+            print("PRIOR: %.1f, minDCF: %.3f" % (p, minDCF))
     """
 
     """---LOGISTIC REGRESSION---
-    for i in range(len(priors)):
+    for p in priors:
         print("")
-        print("-----Logistic Regression(piT = %.1f)-----" %(priors[i]))
-        Dfolds, Lfolds = utility.Ksplit(DC, L, 5)
+        print("-----Logistic Regression(piT = %.1f)-----" %(p))
+        Dfolds, Lfolds = utility.Ksplit(DZ, L, 5)
         scores = []
         orderedLabels = []
         for idx in range(5):
@@ -114,7 +114,7 @@ if __name__ == '__main__':
             DV = Dfolds[idx]
             LV = Lfolds[idx]
             DT, LT = utility.createTrainSet(Dfolds, Lfolds, idx)
-            lr = logisticRegression.LogisticRegression(DT, LT, 0, priors[i])
+            lr = logisticRegression.LogisticRegression(DT, LT, 0, p)
             # Fase di training (dipende dal modello)
             lr.train()
             # Evaluation (dipende dal modello)
@@ -122,22 +122,20 @@ if __name__ == '__main__':
             orderedLabels.append(LV)
         scores = numpy.hstack(scores)
         orderedLabels = numpy.hstack(orderedLabels)
-        for j in range(len(priors)):
-            minDCF = evaluation.minimum_DCF(scores, orderedLabels, priors[j], 1, 1)
-            print("PRIOR: %.1f, minDCF: %.3f" % (priors[j], minDCF))
+        for i in range(len(priors)):
+            minDCF = evaluation.minimum_DCF(scores, orderedLabels, priors[i], 1, 1)
+            print("PRIOR: %.1f, minDCF: %.3f" % (priors[i], minDCF))
     """
 
     """ ---- TROVARE LAMBDA PER LR ----
-    DP = dr.PCA(DC, 11)
-    lambdas = numpy.logspace(-5, 5, num=30)
+    DP = dr.PCA(D, 11)
+    lambdas = numpy.logspace(-5, 5, num=50)
     minDCF = []
-
-    Dfolds, Lfolds = utility.Ksplit(DC, L, 5)
-
-    for j in range(len(priors)):
+    for p in priors:
         for l in lambdas:
             scores = []
             orderedLabels = []
+            Dfolds, Lfolds = utility.Ksplit(DP, L, 5)
             for idx in range(5):
                 # Evaluation set
                 DV = Dfolds[idx]
@@ -151,15 +149,14 @@ if __name__ == '__main__':
                 orderedLabels.append(LV)
             scores = numpy.hstack(scores)
             orderedLabels = numpy.hstack(orderedLabels)
-            minDCF.append(evaluation.minimum_DCF(scores, orderedLabels, priors[j], 1, 1))
-    utility.plotDCF(lambdas, minDCF, 'lambda')
+            minDCF.append(evaluation.minimum_DCF(scores, orderedLabels, p, 1, 1))
+    utility.plotDCF(lambdas, minDCF, '$lambda$')
     """
     """ ---QLR---
-    
-    for i in range(len(priors)):
+    for p in priors:
         print("")
-        print("-----QuadLogistic Regression(piT = %.1f)-----" % (priors[i]))
-        Dfolds, Lfolds = utility.Ksplit(D, L, 5)
+        print("-----QuadLogistic Regression(piT = %.1f)-----" % (p))
+        Dfolds, Lfolds = utility.Ksplit(DZ, L, 5)
         scores = []
         orderedLabels = []
         for idx in range(5):
@@ -167,7 +164,7 @@ if __name__ == '__main__':
             DV = Dfolds[idx]
             LV = Lfolds[idx]
             DT, LT = utility.createTrainSet(Dfolds, Lfolds, idx)
-            qlr = quadLogisticRegression.QLogisticRegression(DT, LT, 0.001, priors[i])
+            qlr = quadLogisticRegression.QLogisticRegression(DT, LT, 0, p)
             # Fase di training (dipende dal modello)
             qlr.train()
             # Evaluation (dipende dal modello)
@@ -180,15 +177,13 @@ if __name__ == '__main__':
             print("PRIOR: %.1f, minDCF: %.3f" % (priors[j], minDCF))
     """
     """QLR SEARCH OF L --- TROPPO TEMPO INFATTIBILE
-    lambdas = numpy.logspace(-5, 5, num=30)
+    lambdas = numpy.logspace(-5, 5, num=40)
     minDCF = []
-
-    Dfolds, Lfolds = utility.Ksplit(DC, L, 5)
-
-    for j in range(len(priors)):
+    for p in priors:
         for l in lambdas:
             scores = []
             orderedLabels = []
+            Dfolds, Lfolds = utility.Ksplit(D, L, 5)
             for idx in range(5):
                 # Evaluation set
                 DV = Dfolds[idx]
@@ -198,19 +193,19 @@ if __name__ == '__main__':
                 # Fase di training (dipende dal modello)
                 qlr.train()
                 # Evaluation (dipende dal modello)
-                scores.append(qlr.getloglikelihoodRatios(DV))
+                scores.append(qlr.getScores(DV))
                 orderedLabels.append(LV)
             scores = numpy.hstack(scores)
             orderedLabels = numpy.hstack(orderedLabels)
-            minDCF.append(evaluation.minimum_DCF(scores, orderedLabels, priors[j], 1, 1))
+            minDCF.append(evaluation.minimum_DCF(scores, orderedLabels, p, 1, 1))
     utility.plotDCF(lambdas, minDCF, 'lambda')
     """
 
     """ ----SVM LINEAR----
-    for i in range(len(priors)):
+    for p in priors:
         print("")
-        print("-----SVM(piT = %.1f)-----" % (priors[i]))
-        Dfolds, Lfolds = utility.Ksplit(D, L, 5)
+        print("-----SVM(piT = %.1f)-----" % (p))
+        Dfolds, Lfolds = utility.Ksplit(DZ, L, 5)
         scores = []
         orderedLabels = []
         for idx in range(5):
@@ -218,7 +213,7 @@ if __name__ == '__main__':
             DV = Dfolds[idx]
             LV = Lfolds[idx]
             DT, LT = utility.createTrainSet(Dfolds, Lfolds, idx)
-            svm = SVM.SVM(DT, LT, priors[i], 10, 1)
+            svm = SVM.SVM(DT, LT, p, 10, 1)
             # Fase di training (dipende dal modello)
             svm.train()
             # Evaluation (dipende dal modello)
@@ -233,7 +228,7 @@ if __name__ == '__main__':
     """----SVM best C value----
     c_X = numpy.logspace(-5, 5, num=30)
     minDCF = []
-    Dfolds, Lfolds = utility.Ksplit(DC, L, 5)
+    Dfolds, Lfolds = utility.Ksplit(D, L, 5)
     for j in range(len(priors)):
         for c in c_X:
             scores = []
@@ -254,11 +249,11 @@ if __name__ == '__main__':
             minDCF.append(evaluation.minimum_DCF(scores, orderedLabels, priors[j], 1, 1))
     utility.plotDCF(c_X, minDCF, 'C')
     """
-    """---POLY SVM ---
-    for i in range(len(priors)):
+    #"""---POLY SVM ---
+    Dfolds, Lfolds = utility.Ksplit(D, L, 5)
+    for p in priors:
         print("")
-        print("-----Polynomial SVM-----")
-        Dfolds, Lfolds = utility.Ksplit(D, L, 5)
+        print("-----Polynomial SVM (%.1f)-----" %(p))
         scores = []
         orderedLabels = []
         for idx in range(5):
@@ -266,7 +261,7 @@ if __name__ == '__main__':
             DV = Dfolds[idx]
             LV = Lfolds[idx]
             DT, LT = utility.createTrainSet(Dfolds, Lfolds, idx)
-            svm = SVM.PolynomialSVM(DT, LT, 0.5, 0.001, 1, 1, 2)
+            svm = SVM.PolynomialSVM(DT, LT, p, 0.0001, 1, 1, 2)
             # Fase di training (dipende dal modello)
             svm.train()
             # Evaluation (dipende dal modello)
@@ -277,11 +272,12 @@ if __name__ == '__main__':
         for j in range(len(priors)):
             minDCF = evaluation.minimum_DCF(scores, orderedLabels, priors[j], 1, 1)
             print("PRIOR: %.1f, minDCF: %.3f" % (priors[j], minDCF))
-        """
+    #"""
+    """---POLI SVM in funzione di C, RAW, c=10---
     c_X = numpy.logspace(-5, 5, num=40)
     minDCF = []
     Dfolds, Lfolds = utility.Ksplit(D, L, 5)
-    for j in range(len(priors)):
+    for p in priors:
         for c in c_X:
             scores = []
             orderedLabels = []
@@ -290,7 +286,7 @@ if __name__ == '__main__':
                 DV = Dfolds[idx]
                 LV = Lfolds[idx]
                 DT, LT = utility.createTrainSet(Dfolds, Lfolds, idx)
-                svm = SVM.PolynomialSVM(DT, LT, 0.5, c, 1, 10, 2)
+                svm = SVM.PolynomialSVM(DT, LT, 0.5, c, 1, 1, 2)
                 # Fase di training (dipende dal modello)
                 svm.train()
                 # Evaluation (dipende dal modello)
@@ -298,5 +294,30 @@ if __name__ == '__main__':
                 orderedLabels.append(LV)
             scores = numpy.hstack(scores)
             orderedLabels = numpy.hstack(orderedLabels)
-            minDCF.append(evaluation.minimum_DCF(scores, orderedLabels, priors[j], 1, 1))
+            minDCF.append(evaluation.minimum_DCF(scores, orderedLabels, p, 1, 1))
     utility.plotDCF(c_X, minDCF, 'C')
+    """
+    """---RBF SVM, Tables ---
+    Dfolds, Lfolds = utility.Ksplit(D, L, 5)
+    for p in priors:
+        print("")
+        print("-----RBF SVM (piT = %.1f)-----" %(p))
+        scores = []
+        orderedLabels = []
+        for idx in range(5):
+            # Evaluation set
+            DV = Dfolds[idx]
+            LV = Lfolds[idx]
+            DT, LT = utility.createTrainSet(Dfolds, Lfolds, idx)
+            svm = SVM.RBF_SVM(DT, LT, p, 10, 1, 0.001)
+            # Fase di training (dipende dal modello)
+            svm.train()
+            # Evaluation (dipende dal modello)
+            scores.append(svm.getScores(DV))
+            orderedLabels.append(LV)
+        scores = numpy.hstack(scores)
+        orderedLabels = numpy.hstack(orderedLabels)
+        for j in range(len(priors)):
+            minDCF = evaluation.minimum_DCF(scores, orderedLabels, priors[j], 1, 1)
+            print("PRIOR: %.1f, minDCF: %.3f" % (priors[j], minDCF))
+    """
