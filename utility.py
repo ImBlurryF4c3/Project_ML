@@ -230,9 +230,6 @@ def load_dataset_shuffled(fname):
             labels_list.append(int(line.split(',')[-1].strip()))
     D = numpy.hstack(samples_list)
     L = numpy.array(labels_list)
-    return shuffle_dataset(D, L)
-
-def shuffle_dataset(D, L):
     numpy.random.seed(0)
     idx = numpy.random.permutation(D.shape[1])
     return D[:, idx], L[idx]
@@ -249,3 +246,50 @@ def bayes_error_plot(p, minDCF, actDCF, filename, title, defPath = ''):
     plt.legend(loc='best')
     plt.savefig(defPath + 'Project_ML/images/calibration/%s_bayes_error_plot.jpg' % filename, dpi=300, bbox_inches='tight')
     plt.close(fig)
+
+def plot_ROC_curve(models, colors, calibrated_scores, LE, filename, title):
+    figure = plt.figure()
+    for i, scores in enumerate(calibrated_scores):
+        threshold = numpy.array(scores)
+        threshold.sort()
+        threshold = numpy.concatenate([numpy.array([-numpy.inf]), threshold, numpy.array([numpy.inf])])
+        FPR = [] # false positive ratio
+        FNR = [] # false negative ratio
+        for t in threshold:
+            Predictions = (scores > t).astype(int)
+            CM = confusionMatrix(Predictions, LE, 2)
+            FPR.append(CM[1, 0]/(CM[1, 0] + CM[0, 0]))
+            FNR.append(CM[0, 1]/(CM[0, 1] + CM[1, 1]))
+        FPR = numpy.array(FPR)      # false positive ratio
+        TPR = 1 - numpy.array(FNR)  # true positvie ratio
+        plt.plot(FPR, TPR, label = models[i], color = colors[i])
+    plt.xlabel('False Positive Ratio')
+    plt.ylabel('True Positive Ratio')
+    plt.title(title)
+    plt.legend(loc='best')
+    plt.savefig('Project_ML/images/evaluation/roc_curve_%s.jpg' % filename, dpi=300, bbox_inches='tight')
+    plt.close(figure)
+    
+
+def plot_DET_curve(models, colors, calibrated_scores, LE, filename, title):
+    figure = plt.figure()
+    for i, scores in enumerate(calibrated_scores):
+        threshold = numpy.array(scores)
+        threshold.sort()
+        threshold = numpy.concatenate([numpy.array([-numpy.inf]), threshold, numpy.array([numpy.inf])])
+        FPR = [] # false positive ratio
+        FNR = [] # false negative ratio
+        for t in threshold:
+            Predictions = (scores > t).astype(int)
+            CM = confusionMatrix(Predictions, LE, 2)
+            FPR.append(CM[1, 0]/(CM[1, 0] + CM[0, 0]))
+            FNR.append(CM[0, 1]/(CM[0, 1] + CM[1, 1]))
+        FPR = numpy.array(FPR)      # false positive ratio
+        FNR = numpy.array(FNR)      # false negative ratio
+        plt.plot(FPR, FNR, label = models[i], color = colors[i])
+    plt.xlabel('False Positive Ratio')
+    plt.ylabel('True Positive Ratio')
+    plt.title(title)
+    plt.legend(loc='best')
+    plt.savefig('Project_ML/images/evaluation/det_curve_%s.jpg' % filename, dpi=300, bbox_inches='tight')
+    plt.close(figure)

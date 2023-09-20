@@ -10,6 +10,7 @@ import logisticRegression
 import quadLogisticRegression
 import SVM
 import calibration
+import test_evaluation
 
 if __name__ == '__main__':
     #D, L = utility.load_dataset('Train.txt') # PC roberto
@@ -342,7 +343,7 @@ if __name__ == '__main__':
                         
     #                     gmm = GMM.GMM(DT, LT, t, c)
     #                     gmm.train()
-    #                     scores.append(gmm.compute_scores(DV))
+    #                     scores.append(gmm.getScores(DV))
 
     #                     orderedLabels.append(LV)
     #                 scores = numpy.hstack(scores)
@@ -360,18 +361,19 @@ if __name__ == '__main__':
 
     #""" -----SCORES CALIBRATION----
     #D, L = utility.load_dataset_shuffled('Train.txt') # PC roberto
-    D, L = utility.load_dataset_shuffled('Project_ML\Train.txt') # PC gabri
+    DT, LT = utility.load_dataset_shuffled('Project_ML\Train.txt') # PC gabri
     #raw_data
-    #calibration.scores_calibration(D, L, 'GMM_Tied_4_Components', 'gmm_tied_4_components_raw_data') # filename and title
+    #calibration.scores_calibration(DT, LT, 'GMM_Tied_4_Components', 'gmm_tied_4_components_raw_data') # filename and title
 
-    calibration.scores_calibration(D, L, 'MVG_tied', 'mvg_tied')
-    #calibration.scores_calibration(D, L, 'logistic regression', 'logistic_regression')
-    #calibration.scores_calibration(D, L, 'svm', 'svm')
+    #calibration.scores_calibration(DT, LT, 'MVG_tied', 'mvg_tied')
+    #calibration.scores_calibration(DT, LT, 'Logistic_Regression', 'Logistic Regression piT=0.9 lambda=0 raw_data')
+    #calibration.scores_calibration(DT, LT, 'SVM', 'SVM_raw_data')
 
     #"""
 
     #""" -----VALIDATION TEST-----
-    
+    DE, LE = utility.load_dataset_shuffled('Project_ML\Test.txt') # PC gabri
+    test_evaluation.test_models(DT, LT, DE, LE)
     
     
     #"""
