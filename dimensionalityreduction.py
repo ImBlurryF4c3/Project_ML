@@ -4,11 +4,11 @@ import matplotlib.pyplot as plt
 import scipy
 
 
-
 def prepPCA(D):
     C = utility.covMatrix(D)
     s, U = numpy.linalg.eigh(C)# Dal momento che C è simmetrica utilizzo la funzione eigh, s contiene gli autovalori in ordine CRESCENTE
     return s, U
+
 
 def PCA(D, m):
     # INPUT: Data matrix and the value of the m directions I qant to keep
@@ -33,6 +33,7 @@ def plotPCAvariance(D):
     plt.ylabel('Fraction of explained variance')
     plt.title('PCA - explained variance')
     plt.show()
+
 
 def computeSwSb(D, L):
     # compute matrices Sw, Sb

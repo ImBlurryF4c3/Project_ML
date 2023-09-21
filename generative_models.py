@@ -35,8 +35,6 @@ def mvGaussian_ML_estimates(D, L, type):
 
 
 
-
-
 def logpdf_GAU_ND(X, mu, C):
     # ottimizzata per essere più veloce rispetto al for loop.
     # X: data matrix

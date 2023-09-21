@@ -13,7 +13,7 @@ class GaussianClassifier:
     def getScores(self, DV, prior):  # this retrieves the class posterior probs (2 righe, n colonne pari al numero di samples)
         return gm.classPosteriorMVG(DV, self.muList, self.covMList, prior)
 
-    def getloglikelihoodRatios(self, DV):  # this has to be thresholded with log-prior odds (contiene tutte le llrs)
+    def getloglikelihoodRatios(self, DV, prior):  # this has to be thresholded with log-prior odds (contiene tutte le llrs)
         return gm.getloglikelihoodRatios(DV, self.muList, self.covMList)
 
     def getPredictions(self, DV, prior):

@@ -1,4 +1,3 @@
-# FILE CHE CONTIENE IL MAIN PER FARE LE VARIE PROVE DEI MODULI
 import numpy
 import utility
 import scipy
@@ -118,7 +117,7 @@ class GMM:
 
         return gmm
 
-    def compute_scores(self, D):
+    def getScores(self, D):
         S, logD0 = logpdf_GMM(D, self.gmm0)
         S, logD1 = logpdf_GMM(D, self.gmm1)
         return logD1 - logD0

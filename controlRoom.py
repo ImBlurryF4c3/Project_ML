@@ -1,18 +1,18 @@
 # FILE CHE CONTIENE IL MAIN PER FARE LE VARIE PROVE DEI MODULI
 import numpy
-
 import utility
-import dimensionalityreduction as dr
-import gaussianClassifiers as gc
-import evaluation
-import logisticRegression
-import quadLogisticRegression
 import SVM
-import calibration
-import GMM
+import evaluation
+import test
+import logisticRegression
+import datetime
 
 if __name__ == '__main__':
     D, L = utility.load_dataset('Train.txt')
+    DE, LE = utility.load_dataset('Test.txt')
+    D, L = utility.shuffle_dataset(D, L)
+    DE, LE = utility.shuffle_dataset(DE, LE)
+    #test.test_models(D, L, DE, LE)
     DC = utility.center_data(D)
     priors = [0.5, 0.1, 0.9]
     PCAdim = [9, 10, 11]
@@ -177,7 +177,7 @@ if __name__ == '__main__':
             minDCF = evaluation.minimum_DCF(scores, orderedLabels, priors[j], 1, 1)
             print("PRIOR: %.1f, minDCF: %.3f" % (priors[j], minDCF))
     """
-    """QLR SEARCH OF L --- TROPPO TEMPO INFATTIBILE
+    """QLR SEARCH OF L --- 
     lambdas = numpy.logspace(-5, 5, num=40)
     minDCF = []
     for p in priors:
@@ -250,7 +250,7 @@ if __name__ == '__main__':
             minDCF.append(evaluation.minimum_DCF(scores, orderedLabels, priors[j], 1, 1))
     utility.plotDCF(c_X, minDCF, 'C')
     """
-    #"""---POLY SVM ---
+    """---POLY SVM ---
     Dfolds, Lfolds = utility.Ksplit(D, L, 5)
     for p in priors:
         print("")
@@ -273,11 +273,11 @@ if __name__ == '__main__':
         for j in range(len(priors)):
             minDCF = evaluation.minimum_DCF(scores, orderedLabels, priors[j], 1, 1)
             print("PRIOR: %.1f, minDCF: %.3f" % (priors[j], minDCF))
-    #"""
-    """---POLI SVM in funzione di C, RAW, c=10---
+    """
+    """---POLI SVM in funzione di C, Z, c=1---
     c_X = numpy.logspace(-5, 5, num=40)
     minDCF = []
-    Dfolds, Lfolds = utility.Ksplit(D, L, 5)
+    Dfolds, Lfolds = utility.Ksplit(DZ, L, 5)
     for p in priors:
         for c in c_X:
             scores = []
@@ -297,3 +297,67 @@ if __name__ == '__main__':
             orderedLabels = numpy.hstack(orderedLabels)
             minDCF.append(evaluation.minimum_DCF(scores, orderedLabels, p, 1, 1))
     utility.plotDCF(c_X, minDCF, 'C')
+    """
+    """---RBF SVM in funzione di C, Z, y=0.01---
+    c_X = numpy.logspace(-5, 5, num=40)
+    minDCF = []
+    Dfolds, Lfolds = utility.Ksplit(DZ, L, 5)
+    for p in priors:
+        for c in c_X:
+            scores = []
+            orderedLabels = []
+            for idx in range(5):
+                # Evaluation set
+                DV = Dfolds[idx]
+                LV = Lfolds[idx]
+                DT, LT = utility.createTrainSet(Dfolds, Lfolds, idx)
+                svm = SVM.RBF_SVM(DT, LT, 0.5, c, 1, 0.01)
+                # Fase di training (dipende dal modello)
+                svm.train()
+                # Evaluation (dipende dal modello)
+                scores.append(svm.getScores(DV))
+                orderedLabels.append(LV)
+            scores = numpy.hstack(scores)
+            orderedLabels = numpy.hstack(orderedLabels)
+            minDCF.append(evaluation.minimum_DCF(scores, orderedLabels, p, 1, 1))
+    utility.plotDCF(c_X, minDCF, 'C')
+    """
+    """ ---- VERIFICA DI LAMBDA PER EVALUATION SET ----
+    lambdas = numpy.logspace(-5, 5, num=50)
+    minDCFe = []
+    minDCFv = []
+    for p in priors:
+        for l in lambdas:
+            lr = logisticRegression.LogisticRegression(DE, LE, l, 0.5)
+            lrv = logisticRegression.LogisticRegression(D, L, l, 0.5)
+            lr.train()
+            lrv.train()
+            scoresE = lr.getScores(DE)
+            scoresV = lrv.getScores(D)
+            minDCFe.append(evaluation.minimum_DCF(scoresE, LE, p, 1, 1))
+            minDCFv.append(evaluation.minimum_DCF(scoresV, L, p, 1, 1))
+    utility.plotDCF_evalVSval(lambdas, minDCFe, minDCFv, 'lambda')
+    """
+    #""" VERIFICA DI GAMMA E C
+    cs = numpy.logspace(-5, 5, num=21)
+    gammas = [0.1, 0.01, 0.001]
+    minDCFe = []
+    minDCFv = []
+    count = 1
+    for y in gammas:
+        for p in priors:
+            for c in cs:
+                date = datetime.datetime.now()
+                now = date.strftime("%H:%M:%S")
+                print("---Ho inziato il giro %d alle ore %s" % (count, now))
+                count +=1
+                svm_train = SVM.RBF_SVM(D, L, 0.5, c, 1, y)
+                svm_eval = SVM.RBF_SVM(DE, LE, 0.5, c, 1, y)
+                svm_train.train()
+                svm_eval.train()
+                scoresE = svm_eval.getScores(DE)
+                scoresV = svm_train.getScores(D)
+                minDCFe.append(evaluation.minimum_DCF(scoresE, LE, p, 1, 1))
+                minDCFv.append(evaluation.minimum_DCF(scoresV, L, p, 1, 1))
+        utility.plotDCF_evalVSval(cs, minDCFe, minDCFv, 'C')
+    #"""
