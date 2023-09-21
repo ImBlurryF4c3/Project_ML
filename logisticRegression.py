@@ -25,7 +25,9 @@ class LogisticRegression:
         x0 = numpy.zeros(self.DT.shape[0]+1) # è dove carico i risultati di minimizzazione per w e b. ndarray (3,)
         xOpt, fOpt, d = scipy.optimize.fmin_l_bfgs_b(self.logreg_obj, x0, approx_grad=True)
         self.xOpt = xOpt # in xOpt[0:-1] c'è w, in xOpt[-1] ho b
-        #return self
+        
+    def get_w_b(self):
+        return self.xOpt[0:-1], self.xOpt[-1]  # w, b per la calibration
 
     def getScores(self, DV): # this can be tresholded with 0
         s = numpy.dot(self.xOpt[0:-1], DV) + self.xOpt[-1]
