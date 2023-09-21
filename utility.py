@@ -288,8 +288,57 @@ def plot_DET_curve(models, colors, calibrated_scores, LE, filename, title):
         FNR = numpy.array(FNR)      # false negative ratio
         plt.plot(FPR, FNR, label = models[i], color = colors[i])
     plt.xlabel('False Positive Ratio')
-    plt.ylabel('True Positive Ratio')
+    plt.ylabel('False Negative Ratio')
     plt.title(title)
     plt.legend(loc='best')
     plt.savefig('Project_ML/images/evaluation/det_curve_%s.jpg' % filename, dpi=300, bbox_inches='tight')
+    plt.close(figure)
+
+
+def bayes_error_plot_best_3_models(p, minDCF, actDCF, filename, title):
+    names_min = ['GMM (4 components)', 'LR', 'RBFSVM']
+    names_act = ['GMM (4 components) uncalibrated', 'LR calibrated', 'RBFSVM calibrated']
+    fig = plt.figure()
+    colors = ['red', 'blue', 'orange']
+    for i in range(3):
+        plt.plot(p, numpy.array(minDCF[i]), label = 'minDCF %s' % names_min[i], color=colors[i], linestyle='--')
+        plt.plot(p, numpy.array(actDCF[i]), label = 'actDCF %s' % names_act[i], color=colors[i])
+    plt.ylim([0, 1])
+    plt.xlim([-4, 4])
+    plt.xlabel('prior')
+    plt.ylabel('DCF')
+    plt.legend(loc='best')
+    plt.title(title)
+    plt.savefig('Project_ML/images/evaluation/%s.jpg' % filename, dpi=300, bbox_inches='tight')
+    plt.close(fig)
+
+
+def plot_gmm_histogram_3(minDCF, minDCF_test, components, model_type):
+    # plot raw_datam z_score for gmm and gmm tied for training and test data
+    figure = plt.figure()
+    bar_width = 0.1
+    l = len(components)
+    x = numpy.arange(l)
+    border_width = 1.0
+    
+    val_raw = minDCF[:l]
+    val_z = minDCF[l:]
+    test_raw = minDCF_test[:l]
+    test_z = minDCF_test[l:]
+    
+    max_y_value = max(max(max(val_raw), max(val_z)), max(max(test_raw), max(test_z)))
+
+    plt.bar(x - 1.5 * bar_width, val_raw, bar_width, label='Validation raw_data', color='mediumpurple', edgecolor='black', hatch='/', linewidth=border_width, linestyle='--')
+    plt.bar(x - 0.5 * bar_width, test_raw, bar_width, label='Test raw_data', color='mediumpurple', edgecolor='black', linewidth=border_width)
+    plt.bar(x + 0.5 * bar_width, val_z, bar_width, label='Validation z-score', color='gold', edgecolor='black', hatch='/', linewidth=border_width, linestyle='--')
+    plt.bar(x + 1.5 * bar_width, test_z, bar_width, label='Test z-score', color='gold', edgecolor='black', linewidth=border_width)
+
+    plt.title('GMM %s piT = 0.5' % model_type)
+    plt.xlabel('GMM Components')
+    plt.ylabel('minDCF')
+    plt.xticks(x, components)
+    plt.legend(loc='best')
+    plt.ylim(0, max_y_value + 0.1)
+    plt.savefig('Project_ML/images/evaluation/evaluation_histogram_gmm_%s.jpg' % model_type, dpi=300, bbox_inches='tight')
+
     plt.close(figure)

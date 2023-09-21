@@ -306,6 +306,54 @@ if __name__ == '__main__':
             minDCF.append(evaluation.minimum_DCF(scores, orderedLabels, priors[j], 1, 1))
     utility.plotDCF(c_X, minDCF, 'C')
     """
+    """---POLY SVM ---
+    Dfolds, Lfolds = utility.Ksplit(D, L, 5)
+    for p in priors:
+        print("")
+        print("-----Polynomial SVM (%.1f)-----" %(p))
+        scores = []
+        orderedLabels = []
+        for idx in range(5):
+            # Evaluation set
+            DV = Dfolds[idx]
+            LV = Lfolds[idx]
+            DT, LT = utility.createTrainSet(Dfolds, Lfolds, idx)
+            svm = SVM.PolynomialSVM(DT, LT, p, 0.0001, 1, 1, 2)
+            # Fase di training (dipende dal modello)
+            svm.train()
+            # Evaluation (dipende dal modello)
+            scores.append(svm.getScores(DV))
+            orderedLabels.append(LV)
+        scores = numpy.hstack(scores)
+        orderedLabels = numpy.hstack(orderedLabels)
+        for j in range(len(priors)):
+            minDCF = evaluation.minimum_DCF(scores, orderedLabels, priors[j], 1, 1)
+            print("PRIOR: %.1f, minDCF: %.3f" % (priors[j], minDCF))
+    """
+    """---POLI SVM in funzione di C, RAW, c=10---
+    c_X = numpy.logspace(-5, 5, num=40)
+    minDCF = []
+    Dfolds, Lfolds = utility.Ksplit(D, L, 5)
+    for p in priors:
+        for c in c_X:
+            scores = []
+            orderedLabels = []
+            for idx in range(5):
+                # Evaluation set
+                DV = Dfolds[idx]
+                LV = Lfolds[idx]
+                DT, LT = utility.createTrainSet(Dfolds, Lfolds, idx)
+                svm = SVM.PolynomialSVM(DT, LT, 0.5, c, 1, 1, 2)
+                # Fase di training (dipende dal modello)
+                svm.train()
+                # Evaluation (dipende dal modello)
+                scores.append(svm.getScores(DV))
+                orderedLabels.append(LV)
+            scores = numpy.hstack(scores)
+            orderedLabels = numpy.hstack(orderedLabels)
+            minDCF.append(evaluation.minimum_DCF(scores, orderedLabels, p, 1, 1))
+    utility.plotDCF(c_X, minDCF, 'C')
+    """
 
     #""" ----GMM-----
     #D, L = utility.load_dataset('Train.txt') # Pc Roberto
@@ -373,7 +421,12 @@ if __name__ == '__main__':
 
     #""" -----VALIDATION TEST-----
     DE, LE = utility.load_dataset_shuffled('Project_ML\Test.txt') # PC gabri
+
     test_evaluation.test_models(DT, LT, DE, LE)
+
+    #test_evaluation.test_best_3_models(DT, LT, DE, LE)
+    
+    #test_evaluation.test_gmm_models(DT, LT, DE, LE)
     
     
     #"""
