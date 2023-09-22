@@ -421,12 +421,15 @@ if __name__ == '__main__':
 
     #""" -----VALIDATION TEST-----
     DE, LE = utility.load_dataset_shuffled('Project_ML\Test.txt') # PC gabri
+    
+    # D, LT = utility.load_dataset('Project_ML\Train.txt') # PC gabri #with shuffle
+    # DT = utility.center_data(D)
+    # E, LE = utility.load_dataset('Project_ML\Test.txt') # PC gabri #with shuffle
+    # DE = utility.center_data(D)
 
-    test_evaluation.test_models(DT, LT, DE, LE)
+    #test_evaluation.test_models(DT, LT, DE, LE)
 
     #test_evaluation.test_best_3_models(DT, LT, DE, LE)
-    
-    #test_evaluation.test_gmm_models(DT, LT, DE, LE)
-    
+    test_evaluation.test_gmm_models(DT, LT, DE, LE)
     
     #"""

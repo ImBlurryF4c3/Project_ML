@@ -26,8 +26,8 @@ class GMM:
         D0 = self.DT[:, self.LT == 0]
         D1 = self.DT[:, self.LT == 1]
 
-        self.gmm0 = self._gmm_LBG(D0, self.components, type)
-        self.gmm1 = self._gmm_LBG(D1, self.components, type)
+        self.gmm0 = self._gmm_LBG(D0, self.components, self.type)
+        self.gmm1 = self._gmm_LBG(D1, self.components, self.type)
 
     def _gmm_LBG(self, D, components, type):
         alpha = 1e-1

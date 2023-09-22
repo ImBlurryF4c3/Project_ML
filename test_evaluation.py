@@ -14,16 +14,22 @@ def test_models(DT, LT, DE, LE):
     model_gmm = GMM.GMM(DT, LT, 'tied', 4)
     model_lr = logisticRegression.LogisticRegression(DT, LT, 0, 0.9)
     DTz = utility.z_normalization(DT) # per z-normalization
+    DEz = utility.z_normalization(DE) # per z-normalization
     model_svm = SVM.SVM(DTz, LT, 0.5, 10, 1)
     model_rbfsvm = SVM.RBF_SVM(DT, LT, 0.5, 10, 1, 0.001) # DT, LT, prior, C, K, y
+    #model_rbfsvm_z = SVM.RBF_SVM(DTz, LT, 0.5, 5, 1, 0.1) # DT, LT, prior, C, K, y
 
     classifiers = [model_gmm, model_lr, model_svm, model_rbfsvm]
+    #classifiers = [model_rbfsvm_z]
     names = ['GMM_Tied (4 components) raw_data', 'LR (piT = 0.9) raw_data', 'SVM (piT = 0.5 C = 10) z-score', 'RBFSVM (piT = 0.5 C = 10 y = 0.001) raw_data']
 
     for idx, model in enumerate(classifiers):
         model.train()
         sc = model.getScores(DT)
         alpha, beta = calibration.calibrated_parameters(sc, LT) # alpha = w - beta = b
+        # if names[idx] == 'SVM (piT = 0.5 C = 10) z-score' or names[idx] == 'pippo':
+        #     se = model.getScores(DEz) # solo per svm
+        # else:
         se = model.getScores(DE)
         scores = alpha * se + beta - numpy.log(0.5 / (1 - 0.5))
         for p in priors:
@@ -36,8 +42,8 @@ def test_models(DT, LT, DE, LE):
 
     colors = ['blue', 'red', 'darkorange', 'green']
 
-    utility.plot_ROC_curve(names, colors, calibrated_scores, LE, 'final_classifiers', 'Final Classifiers')
-    utility.plot_DET_curve(names, colors, calibrated_scores, LE, 'final_classifiers', 'Final Classifiers')
+    #utility.plot_ROC_curve(names, colors, calibrated_scores, LE, 'final_classifiers', 'Final Classifiers')
+    #utility.plot_DET_curve(names, colors, calibrated_scores, LE, 'final_classifiers', 'Final Classifiers')
     print('DONE')
     
 
@@ -94,52 +100,251 @@ def test_best_3_models(DT, LT, DE, LE):
     actDCF = [actDCF_gmm, actDCF_lr, actDCF_rbfsvm]
     utility.bayes_error_plot_best_3_models(p, minDCF, actDCF, 'bayes_plot_best_3_models', 'Bayes plot comparing GMM - LR - RBFSVM')
 
-
 def test_gmm_models(D, L, DE, LE):
     components = [1, 2, 4, 8, 16, 32]
     types_gmm = ['full_cov', 'tied']
     data_type = ['raw_data', 'z_score_data']
 
-    for t in types_gmm:         # 2 plot, in base al tipo gmm e gmm tied
-        minDCF = []
-        minDCF_test = []
-        for title in data_type:
-            if title == 'z_score_data':
-                DTR = utility.z_normalization(D) # dati normalizzati
-                DER = utility.z_normalization(DE) # dati normalizzati
-            else:
+    minDCF = []
+    for data in data_type:
+            if data == 'raw_data':
                 DTR = D
+            else:
+                DTR = utility.z_normalization(D) # dati normalizzati
+            for t in types_gmm:         # 2 plot, in base al tipo gmm e gmm tied
+                for c in components:
+                    print("")
+                    print("----- GMM_%s components = %.1f %s-----" % (t, c, data))
+
+                    Dfolds, Lfolds = numpy.array_split(DTR, 5, axis=1), numpy.array_split(L, 5)
+                    scores = []
+                    orderedLabels = []
+                    for idx in range(5):
+                        DV, LV = Dfolds[idx], Lfolds[idx]
+                        DT, LT = numpy.hstack(Dfolds[:idx] + Dfolds[idx+1:]), numpy.hstack(Lfolds[:idx] + Lfolds[idx+1:])
+
+                        model = GMM.GMM(DT, LT, t, c)
+                        model.train()
+                        scores.append(model.getScores(DV))
+                        orderedLabels.append(LV)
+                    
+                    sc1 = numpy.hstack(scores)
+                    orderedLabels = numpy.hstack(orderedLabels)
+                    
+                    minDCF.append(evaluation.minimum_DCF(sc1, orderedLabels, 0.5, 1, 1))
+                    
+                    print("PRIOR Val: %.1f, minDCF: %.3f" % (0.5, evaluation.minimum_DCF(sc1, orderedLabels, 0.5, 1, 1)))
+                    print("PRIOR Val: %.1f, minDCF: %.3f" % (0.1, evaluation.minimum_DCF(sc1, orderedLabels, 0.1, 1, 1)))
+                    print("PRIOR Val: %.1f, minDCF: %.3f" % (0.9, evaluation.minimum_DCF(sc1, orderedLabels, 0.9, 1, 1)))
+    
+    minDCF_test = []
+    for data in data_type:
+            if data == 'raw_data':
                 DER = DE
-            for c in components:
-                print("")
-                print("----- GMM_%s components = %.1f %s-----" % (t, c, title))
-                model_test = GMM.GMM(DTR, L, t, c)
-                model_test.train()
+                DTR = D
+            else:
+                DER = utility.z_normalization(DE)
+                DTR = utility.z_normalization(D)
+            for t in types_gmm:
+                for c in components:
+                    print("")
+                    print("----- GMM_%s components = %.1f %s-----" % (t, c, data))
+                    model_test = GMM.GMM(DTR, L, t, c)
+                    model_test.train()
 
-                Dfolds, Lfolds = numpy.array_split(DTR, 5, axis=1), numpy.array_split(L, 5)
-                scores = []
-                orderedLabels = []
-                for idx in range(5):
-                    DV, LV = Dfolds[idx], Lfolds[idx]
-                    DT, LT = numpy.hstack(Dfolds[:idx] + Dfolds[idx+1:]), numpy.hstack(Lfolds[:idx] + Lfolds[idx+1:])
+                    sc2 = model_test.getScores(DER)
+                    
+                    minDCF_test.append(evaluation.minimum_DCF(sc2, LE, 0.5, 1, 1))
+                    
+                    print("PRIOR Test: %.1f, minDCF: %.3f" % (0.5, evaluation.minimum_DCF(sc2, LE, 0.5, 1, 1)))
+                    print("PRIOR Test: %.1f, minDCF: %.3f" % (0.1, evaluation.minimum_DCF(sc2, LE, 0.1, 1, 1)))
+                    print("PRIOR Test: %.1f, minDCF: %.3f" % (0.9, evaluation.minimum_DCF(sc2, LE, 0.9, 1, 1)))  
 
-                    model = GMM.GMM(DT, LT, t, c)
-                    model.train()
-                    scores.append(model.getScores(DV))
-                    orderedLabels.append(LV)
-                
-                sc1 = numpy.hstack(scores)
-                orderedLabels = numpy.hstack(orderedLabels)
+    utility.plot_gmm_histogram_3(minDCF, minDCF_test, components, types_gmm)
 
-                sc2 = model_test.getScores(DER)
+# def test_gmm_models(D, L, DE, LE):
+#     components = [1, 2, 4, 8]
+#     data_type = ['raw_data', 'z_score_data']
+
+#     minDCF = []
+#     for data in data_type:
+#             if data == 'raw_data':
+#                 DTR = D
+#             else:
+#                 DTR = utility.z_normalization(D) # dati normalizzati
+#             for c in components:
+#                 print("")
+#                 print("----- GMM_%s components = %.1f %s-----" % ('full_cov', c, data))
+
+#                 Dfolds, Lfolds = numpy.array_split(DTR, 5, axis=1), numpy.array_split(L, 5)
+#                 scores = []
+#                 orderedLabels = []
+#                 for idx in range(5):
+#                     DV, LV = Dfolds[idx], Lfolds[idx]
+#                     DT, LT = numpy.hstack(Dfolds[:idx] + Dfolds[idx+1:]), numpy.hstack(Lfolds[:idx] + Lfolds[idx+1:])
+
+#                     model = GMM.GMM(DT, LT, 'full_cov', c)
+#                     model.train()
+#                     scores.append(model.getScores(DV))
+#                     orderedLabels.append(LV)
                 
-                minDCF.append(evaluation.minimum_DCF(sc1, orderedLabels, 0.5, 1, 1))
-                minDCF_test.append(evaluation.minimum_DCF(sc2, LE, 0.5, 1, 1))
+#                 sc1 = numpy.hstack(scores)
+#                 orderedLabels = numpy.hstack(orderedLabels)
                 
-                print("PRIOR Val: %.1f, minDCF: %.3f" % (0.5, evaluation.minimum_DCF(sc1, LT, 0.5, 1, 1)))
-                print("PRIOR Val: %.1f, minDCF: %.3f" % (0.1, evaluation.minimum_DCF(sc1, LT, 0.1, 1, 1)))
-                print("PRIOR Val: %.1f, minDCF: %.3f" % (0.9, evaluation.minimum_DCF(sc1, LT, 0.9, 1, 1)))
-                print("PRIOR Test: %.1f, minDCF: %.3f" % (0.5, evaluation.minimum_DCF(sc2, LE, 0.5, 1, 1)))
-                print("PRIOR Test: %.1f, minDCF: %.3f" % (0.1, evaluation.minimum_DCF(sc2, LE, 0.1, 1, 1)))
-                print("PRIOR Test: %.1f, minDCF: %.3f" % (0.9, evaluation.minimum_DCF(sc2, LE, 0.9, 1, 1)))      
-        utility.plot_gmm_histogram_3(minDCF, minDCF_test, components, t)
+#                 minDCF.append(evaluation.minimum_DCF(sc1, orderedLabels, 0.5, 1, 1))
+                
+#                 print("PRIOR Val: %.1f, minDCF: %.3f" % (0.5, evaluation.minimum_DCF(sc1, orderedLabels, 0.5, 1, 1)))
+#                 print("PRIOR Val: %.1f, minDCF: %.3f" % (0.1, evaluation.minimum_DCF(sc1, orderedLabels, 0.1, 1, 1)))
+#                 print("PRIOR Val: %.1f, minDCF: %.3f" % (0.9, evaluation.minimum_DCF(sc1, orderedLabels, 0.9, 1, 1)))
+
+#     minDCF_test = []
+#     for data in data_type:
+#             if data == 'raw_data':
+#                 DER = DE
+#                 DTR = D
+#             else:
+#                 DER = utility.z_normalization(DE)
+#                 DTR = utility.z_normalization(D)
+#             for c in components:
+#                 print("")
+#                 print("----- GMM_%s components = %.1f %s-----" % ('full_cov', c, data))
+#                 model_test = GMM.GMM(DTR, L, 'full_cov', c)
+#                 model_test.train()
+
+#                 sc2 = model_test.getScores(DER)
+                
+#                 minDCF_test.append(evaluation.minimum_DCF(sc2, LE, 0.5, 1, 1))
+                
+#                 print("PRIOR Test: %.1f, minDCF: %.3f" % (0.5, evaluation.minimum_DCF(sc2, LE, 0.5, 1, 1)))
+#                 print("PRIOR Test: %.1f, minDCF: %.3f" % (0.1, evaluation.minimum_DCF(sc2, LE, 0.1, 1, 1)))
+#                 print("PRIOR Test: %.1f, minDCF: %.3f" % (0.9, evaluation.minimum_DCF(sc2, LE, 0.9, 1, 1)))  
+
+#     utility.plot_gmm_histogram_3(minDCF, minDCF_test, components, 'full_cov')
+
+
+
+# def test_gmm_models2(D, L, DE, LE):
+#     components = [1, 2, 4, 8]
+#     data_type = ['raw_data', 'z_score_data']
+
+#     minDCF = []
+#     for data in data_type:
+#             if data == 'raw_data':
+#                 DTR = D
+#             else:
+#                 DTR = utility.z_normalization(D) # dati normalizzati
+#             for c in components:
+#                 print("")
+#                 print("----- GMM_%s components = %.1f %s-----" % ('tied', c, data))
+
+#                 Dfolds, Lfolds = numpy.array_split(DTR, 5, axis=1), numpy.array_split(L, 5)
+#                 scores = []
+#                 orderedLabels = []
+#                 for idx in range(5):
+#                     DV, LV = Dfolds[idx], Lfolds[idx]
+#                     DT, LT = numpy.hstack(Dfolds[:idx] + Dfolds[idx+1:]), numpy.hstack(Lfolds[:idx] + Lfolds[idx+1:])
+
+#                     model = GMM.GMM(DT, LT, 'tied', c)
+#                     model.train()
+#                     scores.append(model.getScores(DV))
+#                     orderedLabels.append(LV)
+                
+#                 sc1 = numpy.hstack(scores)
+#                 orderedLabels = numpy.hstack(orderedLabels)
+                
+#                 minDCF.append(evaluation.minimum_DCF(sc1, orderedLabels, 0.5, 1, 1))
+                
+#                 print("PRIOR Val: %.1f, minDCF: %.3f" % (0.5, evaluation.minimum_DCF(sc1, orderedLabels, 0.5, 1, 1)))
+#                 print("PRIOR Val: %.1f, minDCF: %.3f" % (0.1, evaluation.minimum_DCF(sc1, orderedLabels, 0.1, 1, 1)))
+#                 print("PRIOR Val: %.1f, minDCF: %.3f" % (0.9, evaluation.minimum_DCF(sc1, orderedLabels, 0.9, 1, 1)))
+
+#     minDCF_test = []
+#     for data in data_type:
+#             if data == 'raw_data':
+#                 DER = DE
+#                 DTR = D
+#             else:
+#                 DER = utility.z_normalization(DE)
+#                 DTR = utility.z_normalization(D)
+#             for c in components:
+#                 print("")
+#                 print("----- GMM_%s components = %.1f %s-----" % ('tied', c, data))
+#                 model_test = GMM.GMM(DTR, L, 'tied', c)
+#                 model_test.train()
+
+#                 sc2 = model_test.getScores(DER)
+                
+#                 minDCF_test.append(evaluation.minimum_DCF(sc2, LE, 0.5, 1, 1))
+                
+#                 print("PRIOR Test: %.1f, minDCF: %.3f" % (0.5, evaluation.minimum_DCF(sc2, LE, 0.5, 1, 1)))
+#                 print("PRIOR Test: %.1f, minDCF: %.3f" % (0.1, evaluation.minimum_DCF(sc2, LE, 0.1, 1, 1)))
+#                 print("PRIOR Test: %.1f, minDCF: %.3f" % (0.9, evaluation.minimum_DCF(sc2, LE, 0.9, 1, 1)))  
+
+#     utility.plot_gmm_histogram_3(minDCF, minDCF_test, components, 'tied')
+
+
+
+
+
+    
+# def test_gmm_models(D, L, DE, LE):
+#     components = [1, 2, 4, 8, 16, 32]
+#     types_gmm = ['full_cov', 'tied_diagonal']
+#     data_type = ['raw_data', 'z_score_data']
+
+#     minDCF = []
+#     for data in data_type:
+#             if data == 'raw_data':
+#                 DTR = D
+#             else:
+#                 DTR = utility.z_normalization(D) # dati normalizzati
+#             for t in types_gmm:         # 2 plot, in base al tipo gmm e gmm tied
+#                 for c in components:
+#                     print("")
+#                     print("----- GMM_%s components = %.1f %s-----" % (t, c, data))
+
+#                     Dfolds, Lfolds = numpy.array_split(DTR, 5, axis=1), numpy.array_split(L, 5)
+#                     scores = []
+#                     orderedLabels = []
+#                     for idx in range(5):
+#                         DV, LV = Dfolds[idx], Lfolds[idx]
+#                         DT, LT = numpy.hstack(Dfolds[:idx] + Dfolds[idx+1:]), numpy.hstack(Lfolds[:idx] + Lfolds[idx+1:])
+
+#                         model = GMM.GMM(DT, LT, t, c)
+#                         model.train()
+#                         scores.append(model.getScores(DV))
+#                         orderedLabels.append(LV)
+                    
+#                     sc1 = numpy.hstack(scores)
+#                     orderedLabels = numpy.hstack(orderedLabels)
+                    
+#                     minDCF.append(evaluation.minimum_DCF(sc1, orderedLabels, 0.5, 1, 1))
+                    
+#                     print("PRIOR Val: %.1f, minDCF: %.3f" % (0.5, evaluation.minimum_DCF(sc1, orderedLabels, 0.5, 1, 1)))
+#                     print("PRIOR Val: %.1f, minDCF: %.3f" % (0.1, evaluation.minimum_DCF(sc1, orderedLabels, 0.1, 1, 1)))
+#                     print("PRIOR Val: %.1f, minDCF: %.3f" % (0.9, evaluation.minimum_DCF(sc1, orderedLabels, 0.9, 1, 1)))
+    
+#     minDCF_test = []
+#     for data in data_type:
+#             if data == 'raw_data':
+#                 DER = DE
+#                 DTR = D
+#             else:
+#                 DER = utility.z_normalization(DE)
+#                 DTR = utility.z_normalization(D)
+#             for t in types_gmm:
+#                 for c in components:
+#                     print("")
+#                     print("----- GMM_%s components = %.1f %s-----" % (t, c, data))
+#                     model_test = GMM.GMM(DTR, L, t, c)
+#                     model_test.train()
+
+#                     sc2 = model_test.getScores(DER)
+                    
+#                     minDCF_test.append(evaluation.minimum_DCF(sc2, LE, 0.5, 1, 1))
+                    
+#                     print("PRIOR Test: %.1f, minDCF: %.3f" % (0.5, evaluation.minimum_DCF(sc2, LE, 0.5, 1, 1)))
+#                     print("PRIOR Test: %.1f, minDCF: %.3f" % (0.1, evaluation.minimum_DCF(sc2, LE, 0.1, 1, 1)))
+#                     print("PRIOR Test: %.1f, minDCF: %.3f" % (0.9, evaluation.minimum_DCF(sc2, LE, 0.9, 1, 1)))  
+
+#     utility.plot_gmm_histogram_3(minDCF, minDCF_test, components, types_gmm)
