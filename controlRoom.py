@@ -338,26 +338,28 @@ if __name__ == '__main__':
             minDCFv.append(evaluation.minimum_DCF(scoresV, L, p, 1, 1))
     utility.plotDCF_evalVSval(lambdas, minDCFe, minDCFv, 'lambda')
     """
-    #""" VERIFICA DI GAMMA E C
-    cs = numpy.logspace(-5, 5, num=21)
-    gammas = [0.1, 0.01, 0.001]
-    minDCFe = []
-    minDCFv = []
-    count = 1
-    for y in gammas:
-        for p in priors:
-            for c in cs:
-                date = datetime.datetime.now()
-                now = date.strftime("%H:%M:%S")
-                print("---Ho inziato il giro %d alle ore %s" % (count, now))
-                count +=1
-                svm_train = SVM.RBF_SVM(D, L, 0.5, c, 1, y)
-                svm_eval = SVM.RBF_SVM(DE, LE, 0.5, c, 1, y)
-                svm_train.train()
-                svm_eval.train()
-                scoresE = svm_eval.getScores(DE)
-                scoresV = svm_train.getScores(D)
-                minDCFe.append(evaluation.minimum_DCF(scoresE, LE, p, 1, 1))
-                minDCFv.append(evaluation.minimum_DCF(scoresV, L, p, 1, 1))
-        utility.plotDCF_evalVSval(cs, minDCFe, minDCFv, 'C')
-    #"""
+
+    # """ -----SCORES CALIBRATION----
+    # D, L = utility.load_dataset_shuffled('Train.txt') # PC roberto
+    DT, LT = utility.load_dataset_shuffled('Project_ML\Train.txt')  # PC gabri
+    # raw_data
+    # calibration.scores_calibration(DT, LT, 'GMM_Tied_4_Components', 'gmm_tied_4_components_raw_data') # filename and title
+
+    # calibration.scores_calibration(DT, LT, 'MVG_tied', 'mvg_tied')
+    # calibration.scores_calibration(DT, LT, 'Logistic_Regression', 'Logistic Regression piT=0.9 lambda=0 raw_data')
+    # calibration.scores_calibration(DT, LT, 'SVM', 'SVM_raw_data')
+
+    # """
+
+    # """ -----VALIDATION TEST-----
+    DE, LE = utility.load_dataset_shuffled('Project_ML\Test.txt')  # PC gabri
+
+    # D, LT = utility.load_dataset('Project_ML\Train.txt') # PC gabri #with shuffle
+    # DT = utility.center_data(D)
+    # E, LE = utility.load_dataset('Project_ML\Test.txt') # PC gabri #with shuffle
+    # DE = utility.center_data(D)
+
+    # test_evaluation.test_models(DT, LT, DE, LE)
+
+    # test_evaluation.test_best_3_models(DT, LT, DE, LE)
+    test_evaluation.test_gmm_models(DT, LT, DE, LE)

@@ -267,7 +267,7 @@ def bayes_error_plot(p, minDCF, actDCF, filename, title, defPath = ''):
     plt.xlabel('prior')
     plt.ylabel('DCF')
     plt.legend(loc='best')
-    plt.savefig(defPath + 'Project_ML/images/calibration/%s_bayes_error_plot.jpg' % filename, dpi=300, bbox_inches='tight')
+    plt.savefig(defPath + 'images/calibration/%s_bayes_error_plot.jpg' % filename, dpi=300, bbox_inches='tight')
     plt.close(fig)
 
 
@@ -291,7 +291,7 @@ def plot_ROC_curve(models, colors, calibrated_scores, LE, filename, title):
     plt.ylabel('True Positive Ratio')
     plt.title(title)
     plt.legend(loc='best')
-    plt.savefig('Project_ML/images/evaluation/roc_curve_%s.jpg' % filename, dpi=300, bbox_inches='tight')
+    plt.savefig('images/evaluation/roc_curve_%s.jpg' % filename, dpi=300, bbox_inches='tight')
     plt.close(figure)
 
 
@@ -315,7 +315,7 @@ def plot_DET_curve(models, colors, calibrated_scores, LE, filename, title):
     plt.ylabel('False Negative Ratio')
     plt.title(title)
     plt.legend(loc='best')
-    plt.savefig('Project_ML/images/evaluation/det_curve_%s.jpg' % filename, dpi=300, bbox_inches='tight')
+    plt.savefig('images/evaluation/det_curve_%s.jpg' % filename, dpi=300, bbox_inches='tight')
     plt.close(figure)
 
 
@@ -333,41 +333,43 @@ def bayes_error_plot_best_3_models(p, minDCF, actDCF, filename, title):
     plt.ylabel('DCF')
     plt.legend(loc='best')
     plt.title(title)
-    plt.savefig('Project_ML/images/evaluation/%s.jpg' % filename, dpi=300, bbox_inches='tight')
+    plt.savefig('images/evaluation/%s.jpg' % filename, dpi=300, bbox_inches='tight')
     plt.close(fig)
 
 
 def plot_gmm_histogram_3(minDCF, minDCF_test, components, model_type):
     # plot raw_datam z_score for gmm and gmm tied for training and test data
-    figure = plt.figure()
-    bar_width = 0.1
-    l = len(components)
-    x = numpy.arange(l)
-    border_width = 1.0
+    for idx, model in enumerate(model_type):
+        figure = plt.figure()
+        bar_width = 0.1
+        l = len(components)
+        x = numpy.arange(l)
+        border_width = 1.0
+        if idx == 0:  # full cov
+            val_raw, val_z = minDCF[:l], minDCF[2 * l:3 * l]
+            test_raw, test_z = minDCF_test[:l], minDCF_test[2 * l:3 * l]
+        else:  # tied
+            val_raw, val_z = minDCF[l:2 * l], minDCF[3 * l:]
+            test_raw, test_z = minDCF_test[l:2 * l], minDCF_test[3 * l:]
 
-    val_raw = minDCF[:l]
-    val_z = minDCF[l:]
-    test_raw = minDCF_test[:l]
-    test_z = minDCF_test[l:]
+        max_y_value = max(max(max(val_raw), max(val_z)), max(max(test_raw), max(test_z)))
 
-    max_y_value = max(max(max(val_raw), max(val_z)), max(max(test_raw), max(test_z)))
+        plt.bar(x - 1.5 * bar_width, val_raw, bar_width, label='Validation raw_data', color='mediumpurple',
+                edgecolor='black', hatch='/', linewidth=border_width, linestyle='--')
+        plt.bar(x - 0.5 * bar_width, test_raw, bar_width, label='Test raw_data', color='mediumpurple',
+                edgecolor='black', linewidth=border_width)
+        plt.bar(x + 0.5 * bar_width, val_z, bar_width, label='Validation z-score', color='gold', edgecolor='black',
+                hatch='/', linewidth=border_width, linestyle='--')
+        plt.bar(x + 1.5 * bar_width, test_z, bar_width, label='Test z-score', color='gold', edgecolor='black',
+                linewidth=border_width)
 
-    plt.bar(x - 1.5 * bar_width, val_raw, bar_width, label='Validation raw_data', color='mediumpurple',
-            edgecolor='black', hatch='/', linewidth=border_width, linestyle='--')
-    plt.bar(x - 0.5 * bar_width, test_raw, bar_width, label='Test raw_data', color='mediumpurple', edgecolor='black',
-            linewidth=border_width)
-    plt.bar(x + 0.5 * bar_width, val_z, bar_width, label='Validation z-score', color='gold', edgecolor='black',
-            hatch='/', linewidth=border_width, linestyle='--')
-    plt.bar(x + 1.5 * bar_width, test_z, bar_width, label='Test z-score', color='gold', edgecolor='black',
-            linewidth=border_width)
+        plt.title('GMM %s piT = 0.5' % model)
+        plt.xlabel('GMM Components')
+        plt.ylabel('minDCF')
+        plt.xticks(x, components)
+        plt.legend(loc='best')
+        plt.ylim(0, max_y_value + 0.1)
+        plt.savefig('images/evaluation/evaluation_histogram_gmm_%s.jpg' % model, dpi=300,
+                    bbox_inches='tight')
 
-    plt.title('GMM %s piT = 0.5' % model_type)
-    plt.xlabel('GMM Components')
-    plt.ylabel('minDCF')
-    plt.xticks(x, components)
-    plt.legend(loc='best')
-    plt.ylim(0, max_y_value + 0.1)
-    plt.savefig('Project_ML/images/evaluation/evaluation_histogram_gmm_%s.jpg' % model_type, dpi=300,
-                bbox_inches='tight')
-
-    plt.close(figure)
+        plt.close(figure)
